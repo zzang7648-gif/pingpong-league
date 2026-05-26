@@ -46,22 +46,32 @@
     <!-- 3. 리그 기록 및 점수 입력 -->
     <div class="row">
         <div class="col-12">
-            <h3>3. 리그 기록</h3>
-            <table class="table table-hover">
+            <h3>3. 리그 기록 (전체 승패표)</h3>
+            <table class="table table-bordered table-sm text-center align-middle">
                 <thead class="table-dark">
-                    <tr><th>선수1</th><th>점수</th><th>vs</th><th>점수</th><th>선수2</th><th>입력</th></tr>
+                    <tr>
+                        <th>선수</th>
+                        <th th:each="p : ${players}" th:text="${p.name}">이름</th>
+                    </tr>
                 </thead>
                 <tbody>
-                    <tr th:each="match : ${matches}">
-                        <form action="/matches/update" method="post">
-                            <input type="hidden" name="id" th:value="${match.id}">
-                            <td th:text="${match.player1}"></td>
-                            <td><input type="number" name="score1" th:value="${match.score1}" class="form-control form-control-sm"></td>
-                            <td>vs</td>
-                            <td><input type="number" name="score2" th:value="${match.score2}" class="form-control form-control-sm"></td>
-                            <td th:text="${match.player2}"></td>
-                            <td><button type="submit" class="btn btn-sm btn-primary">저장</button></td>
-                        </form>
+                    <tr th:each="p1, stat1 : ${players}">
+                        <th class="table-light" th:text="${p1.name}">나</th>
+                        <td th:each="p2, stat2 : ${players}">
+                            <span th:if="${stat1.index == stat2.index}">-</span>
+                            
+                            <span th:if="${stat1.index != stat2.index}">
+                                <div th:each="match : ${matches}" th:if="${(match.player1 == p1.name && match.player2 == p2.name) || (match.player1 == p2.name && match.player2 == p1.name)}">
+                                    <form action="/matches/save" method="post" class="d-flex justify-content-center">
+                                        <input type="hidden" name="id" th:value="${match.id}">
+                                        <input type="number" name="score1" th:value="${match.player1 == p1.name ? match.score1 : match.score2}" class="form-control form-control-sm" style="width: 50px;">
+                                        <span class="mx-1">:</span>
+                                        <input type="number" name="score2" th:value="${match.player1 == p1.name ? match.score2 : match.score1}" class="form-control form-control-sm" style="width: 50px;">
+                                        <button type="submit" class="btn btn-sm btn-outline-primary ms-1">✓</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
                     </tr>
                 </tbody>
             </table>
