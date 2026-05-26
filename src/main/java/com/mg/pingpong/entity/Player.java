@@ -12,7 +12,7 @@ public class Player {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
-    private String grade;
+    private int grade;
     private int win;
     private int lose;
     
@@ -22,13 +22,13 @@ public class Player {
     public String getName() {
         return name;
     }
-    public String getGrade() {
+    public int getGrade() {
         return grade;
     }
     public void setName(String name) {
         this.name = name;
     }
-    public void setGrade(String grade) {
+    public void setGrade(int grade) {
         this.grade = grade;
     }
     public int getWin() {

@@ -52,7 +52,7 @@ public class PlayerController {
     public String updatePlayer(
             @RequestParam("id") Long id,
             @RequestParam("name") String name,
-            @RequestParam("grade") String grade
+            @RequestParam("grade") int grade
     ) {
 
         Player player = playerRepository.findById(id).orElse(null);
@@ -69,7 +69,7 @@ public class PlayerController {
     @PostMapping("/players/save")
     public String savePlayer(
             @RequestParam("name") String name,
-            @RequestParam("grade") String grade
+            @RequestParam("grade") int grade
     ) {
 
         Player player = new Player();
