@@ -9,6 +9,7 @@ import com.mg.pingpong.entity.Player;
 public interface PlayerRepository extends JpaRepository<Player, Long> {
 
     Player findByName(String name);
+    List<Player> findAllByOrderByGradeAscNameAsc();
     List<Player> findAllByOrderByWinDesc();
-
+    
 }
