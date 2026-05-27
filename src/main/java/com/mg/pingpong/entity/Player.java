@@ -12,23 +12,34 @@ public class Player {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
-    private int grade;
+    private String grade;
     private int win;
     private int lose;
-    private int elo = 1500; // Elo 점수 필드 추가 (기본값 1500)
+    private Integer elo = 1500; // Elo 점수 필드 추가 (기본값 1500)
     
     public Long getId() { return id; }
     public String getName() { return name; }
-    public int getGrade() { return grade; }
+    public String getGrade() { return grade; }
     public void setName(String name) { this.name = name; }
-    public void setGrade(int grade) { this.grade = grade; }
+    public void setGrade(String grade) { this.grade = grade; }
     public int getWin() { return win; }
     public void setWin(int win) { this.win = win; }
     public int getLose() { return lose; }
     public void setLose(int lose) { this.lose = lose; }
 
     // Elo 관련 메서드 추가
-    public int getElo() { return elo; }
+    public Integer getElo() { return elo; }
     public void setElo(int elo) { this.elo = elo; }
+
+
+    // Player.java 내부
+    private boolean paidMembership; 
+    private String membershipDate;
+
+    // Getter, Setter만 추가
+    public boolean isPaidMembership() { return paidMembership; }
+    public void setPaidMembership(boolean paidMembership) { this.paidMembership = paidMembership; }
+    public String getMembershipDate() { return membershipDate; }
+    public void setMembershipDate(String membershipDate) { this.membershipDate = membershipDate; }
     
 }
