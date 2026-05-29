@@ -14,4 +14,7 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
     List<Player> findAllByOrderByGradeAscNameAsc();
     List<Player> findAllByOrderByWinDesc();
     
+
+    List<Player> findTop10ByOrderByEloDesc();
+
 }

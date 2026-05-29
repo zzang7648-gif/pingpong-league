@@ -36,4 +36,11 @@ public class Match {
 
     public boolean isFinished() { return isFinished; }
     public void setFinished(boolean finished) { isFinished = finished; }
+
+
+    // Match.java
+    private String matchDate; // 예: "2026-05-29"
+
+    public String getMatchDate() { return matchDate; }
+    public void setMatchDate(String matchDate) { this.matchDate = matchDate; }
 }

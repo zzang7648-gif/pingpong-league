@@ -16,6 +16,8 @@ public class Player {
     private int win;
     private int lose;
     private Integer elo = 1500; // Elo 점수 필드 추가 (기본값 1500)
+    private boolean paidMembership;
+    private String membershipDate;
     
     public Long getId() { return id; }
     public String getName() { return name; }
@@ -30,16 +32,10 @@ public class Player {
     // Elo 관련 메서드 추가
     public Integer getElo() { return elo; }
     public void setElo(int elo) { this.elo = elo; }
-
-
-    // Player.java 내부
-    private boolean paidMembership; 
-    private String membershipDate;
-
-    // Getter, Setter만 추가
     public boolean isPaidMembership() { return paidMembership; }
     public void setPaidMembership(boolean paidMembership) { this.paidMembership = paidMembership; }
+    
     public String getMembershipDate() { return membershipDate; }
     public void setMembershipDate(String membershipDate) { this.membershipDate = membershipDate; }
-    
+        
 }
