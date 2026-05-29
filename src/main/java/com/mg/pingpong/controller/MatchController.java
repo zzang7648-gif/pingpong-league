@@ -143,7 +143,7 @@ public class MatchController {
     }
 
     @PostMapping("/matches/generate")
-    @Transactional // <- 이 어노테이션이 있어야 삭제와 생성이 한 번에 처리됩니다.
+    @Transactional
     public String generateMatches(@RequestParam("matchDate") String matchDate, 
                                 @RequestParam(value = "selectedPlayerNames") List<String> selectedNames) {
         
@@ -151,10 +151,10 @@ public class MatchController {
             return "redirect:/matches?error=min_two_players";
         }
         
-        // [추가] 오늘 날짜의 기존 매치 데이터가 있다면 싹 다 삭제 (중복 생성 방지!)
+        // 오늘 날짜의 기존 매치 데이터 삭제
         matchRepository.deleteByMatchDate(matchDate); 
         
-        // [기존 로직 유지] 새로운 대진표 생성
+        // [수정] 셔플 로직 삭제, selectedNames 그대로 사용
         for (int i = 0; i < selectedNames.size(); i++) {
             for (int j = i + 1; j < selectedNames.size(); j++) {
                 Match match = new Match();
@@ -168,7 +168,6 @@ public class MatchController {
         }
         return "redirect:/matches?date=" + matchDate;
     }
-
        
 
     @PostMapping("/matches/save-matrix")
