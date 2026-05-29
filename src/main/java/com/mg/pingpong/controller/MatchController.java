@@ -45,10 +45,19 @@ public class MatchController {
                 .filter(p -> participantNames.contains(p.getName()))
                 .toList();
 
+        // 기존 8명 고정 로직 대신 아래 코드를 사용하세요.
         List<List<Player>> playerGroups = new ArrayList<>();
-        for (int i = 0; i < participants.size(); i += 8) {
-            int end = Math.min(i + 8, participants.size());
-            playerGroups.add(participants.subList(i, end));
+        int totalParticipants = participants.size();
+
+        if (totalParticipants >= 10) {
+            // 2개 조로 나누기
+            int half = (int) Math.ceil(totalParticipants / 2.0); // 11명일 경우 6명, 10명일 경우 5명
+            
+            playerGroups.add(participants.subList(0, half));       // 1조
+            playerGroups.add(participants.subList(half, totalParticipants)); // 2조
+        } else {
+            // 10명 미만은 그냥 하나의 조로 구성
+            playerGroups.add(participants);
         }
 
         model.addAttribute("topPlayers", topPlayers);
@@ -134,10 +143,18 @@ public class MatchController {
     }
 
     @PostMapping("/matches/generate")
+    @Transactional // <- 이 어노테이션이 있어야 삭제와 생성이 한 번에 처리됩니다.
     public String generateMatches(@RequestParam("matchDate") String matchDate, 
-                                  @RequestParam(value = "selectedPlayerNames") List<String> selectedNames) {
-        if (selectedNames == null || selectedNames.size() < 2) return "redirect:/matches?error=min_two_players";
+                                @RequestParam(value = "selectedPlayerNames") List<String> selectedNames) {
         
+        if (selectedNames == null || selectedNames.size() < 2) {
+            return "redirect:/matches?error=min_two_players";
+        }
+        
+        // [추가] 오늘 날짜의 기존 매치 데이터가 있다면 싹 다 삭제 (중복 생성 방지!)
+        matchRepository.deleteByMatchDate(matchDate); 
+        
+        // [기존 로직 유지] 새로운 대진표 생성
         for (int i = 0; i < selectedNames.size(); i++) {
             for (int j = i + 1; j < selectedNames.size(); j++) {
                 Match match = new Match();
@@ -151,6 +168,8 @@ public class MatchController {
         }
         return "redirect:/matches?date=" + matchDate;
     }
+
+       
 
     @PostMapping("/matches/save-matrix")
     @Transactional
