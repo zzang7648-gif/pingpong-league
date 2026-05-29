@@ -46,20 +46,18 @@ public class MatchController {
                 .toList();
         List<Player> shuffledParticipants = new ArrayList<>(participants);
         java.util.Collections.shuffle(shuffledParticipants);
-        
+
         // 기존 8명 고정 로직 대신 아래 코드를 사용하세요.
         List<List<Player>> playerGroups = new ArrayList<>();
-        int totalParticipants = participants.size();
+        int totalParticipants = shuffledParticipants.size();
 
         if (totalParticipants >= 10) {
-            // 2개 조로 나누기
-            int half = (int) Math.ceil(totalParticipants / 2.0); // 11명일 경우 6명, 10명일 경우 5명
-            
-            playerGroups.add(participants.subList(0, half));       // 1조
-            playerGroups.add(participants.subList(half, totalParticipants)); // 2조
-        } else {
-            // 10명 미만은 그냥 하나의 조로 구성
-            playerGroups.add(participants);
+            int half = (int) Math.ceil(totalParticipants / 2.0);
+    
+            playerGroups.add(shuffledParticipants.subList(0, half)); // 1조
+            playerGroups.add(shuffledParticipants.subList(half, totalParticipants)); // 2조
+            }    else {
+             playerGroups.add(shuffledParticipants); // 10명 미만은 그대로
         }
 
         model.addAttribute("topPlayers", topPlayers);
