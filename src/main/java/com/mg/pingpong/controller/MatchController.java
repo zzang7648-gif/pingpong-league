@@ -44,7 +44,9 @@ public class MatchController {
         List<Player> participants = allPlayers.stream()
                 .filter(p -> participantNames.contains(p.getName()))
                 .toList();
-
+        List<Player> shuffledParticipants = new ArrayList<>(participants);
+        java.util.Collections.shuffle(shuffledParticipants);
+        
         // 기존 8명 고정 로직 대신 아래 코드를 사용하세요.
         List<List<Player>> playerGroups = new ArrayList<>();
         int totalParticipants = participants.size();
