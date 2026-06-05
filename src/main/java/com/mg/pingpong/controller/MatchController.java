@@ -18,6 +18,7 @@ import com.mg.pingpong.repository.MatchRepository;
 import com.mg.pingpong.repository.PlayerRepository;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.LinkedHashSet;
 
 @Controller
 public class MatchController {
@@ -32,39 +33,58 @@ public class MatchController {
     public String matches(Model model, @RequestParam(value = "date", required = false) String date) {
         String targetDate = (date != null) ? date : java.time.LocalDate.now().toString();
 
-        List<Player> topPlayers = playerRepository.findTop10ByOrderByEloDesc();
+        List<Player> topPlayers = playerRepository.findTop10ActivePlayers();
         List<Player> allPlayers = playerRepository.findAll();
+        
+        // 1. DB에서 저장된 순서대로 매치를 가져옵니다
         List<Match> matches = matchRepository.findByMatchDate(targetDate);
 
-        List<String> participantNames = matches.stream()
-                .flatMap(m -> java.util.stream.Stream.of(m.getPlayer1(), m.getPlayer2()))
-                .distinct()
-                .toList();
+        // 2. 매치 데이터에서 참가자들을 '나온 순서대로' 뽑아냅니다.
+        java.util.LinkedHashSet<String> participantSet = new java.util.LinkedHashSet<>();
+        for (Match m : matches) {
+            participantSet.add(m.getPlayer1());
+            participantSet.add(m.getPlayer2());
+        }
         
-        List<Player> participants = allPlayers.stream()
-                .filter(p -> participantNames.contains(p.getName()))
+        // [중요] Set을 List로 변환해서 participantNames 변수에 담아야 합니다!
+        List<String> participantNames = new java.util.ArrayList<>(participantSet);
+        
+        // 3. 이름 리스트를 다시 Player 객체 리스트로 매핑
+        List<Player> participants = participantNames.stream()
+                .map(name -> allPlayers.stream().filter(p -> p.getName().equals(name)).findFirst().orElse(null))
+                .filter(java.util.Objects::nonNull)
                 .toList();
-        List<Player> shuffledParticipants = new ArrayList<>(participants);
-        java.util.Collections.shuffle(shuffledParticipants);
 
-        // 기존 8명 고정 로직 대신 아래 코드를 사용하세요.
+        // 4. 이제 셔플 없이 그대로 그룹을 나눕니다.
         List<List<Player>> playerGroups = new ArrayList<>();
-        int totalParticipants = shuffledParticipants.size();
+        int totalParticipants = participants.size();
 
         if (totalParticipants >= 10) {
             int half = (int) Math.ceil(totalParticipants / 2.0);
-    
-            playerGroups.add(shuffledParticipants.subList(0, half)); // 1조
-            playerGroups.add(shuffledParticipants.subList(half, totalParticipants)); // 2조
-            }    else {
-             playerGroups.add(shuffledParticipants); // 10명 미만은 그대로
+            playerGroups.add(participants.subList(0, half));       // 1조
+            playerGroups.add(participants.subList(half, totalParticipants)); // 2조
+        } else {
+            playerGroups.add(participants);
         }
+
+
+        // 5. [추가] 화면 행렬에서 점수를 찾기 쉽도록 Map을 만듭니다.
+        Map<String, Match> matchMap = new java.util.HashMap<>();
+        for (Match m : matches) {
+            // player1_player2 라는 키로 매치 정보를 저장
+            matchMap.put(m.getPlayer1() + "_" + m.getPlayer2(), m);
+            // player2_player1 로도 검색 가능하게 양방향 저장
+            matchMap.put(m.getPlayer2() + "_" + m.getPlayer1(), m);
+        }
+        model.addAttribute("matchMap", matchMap);
 
         model.addAttribute("topPlayers", topPlayers);
         model.addAttribute("players", allPlayers);
         model.addAttribute("playerGroups", playerGroups);
         model.addAttribute("matches", matches);
         model.addAttribute("selectedDate", targetDate);
+
+
         
         return "matches";
     }
@@ -146,23 +166,19 @@ public class MatchController {
     @Transactional
     public String generateMatches(@RequestParam("matchDate") String matchDate, 
                                 @RequestParam(value = "selectedPlayerNames") List<String> selectedNames) {
+
+        matchRepository.deleteByMatchDate(matchDate);
+
+        List<String> shuffledNames = new ArrayList<>(selectedNames);
+        java.util.Collections.shuffle(shuffledNames);
         
-        if (selectedNames == null || selectedNames.size() < 2) {
-            return "redirect:/matches?error=min_two_players";
-        }
-        
-        // 오늘 날짜의 기존 매치 데이터 삭제
-        matchRepository.deleteByMatchDate(matchDate); 
-        
-        // [수정] 셔플 로직 삭제, selectedNames 그대로 사용
-        for (int i = 0; i < selectedNames.size(); i++) {
-            for (int j = i + 1; j < selectedNames.size(); j++) {
+        for (int i = 0; i < shuffledNames.size(); i++) {
+            for (int j = i + 1; j < shuffledNames.size(); j++) {
                 Match match = new Match();
-                match.setPlayer1(selectedNames.get(i));
-                match.setPlayer2(selectedNames.get(j));
+                match.setPlayer1(shuffledNames.get(i));
+                match.setPlayer2(shuffledNames.get(j));
                 match.setMatchDate(matchDate);
-                match.setScore1(0);
-                match.setScore2(0);
+                // ... 생략
                 matchRepository.save(match);
             }
         }
@@ -208,5 +224,17 @@ public class MatchController {
         if (diff >= 3) return 1.5;
         if (diff == 2) return 1.2;
         return 1.0;
+    }
+
+    @GetMapping("/matches/recalculate-all")
+    @Transactional
+    public String recalculateAll(@RequestParam("date") String date) {
+        List<Match> matches = matchRepository.findByMatchDate(date);
+        for (Match match : matches) {
+            if (match.isFinished()) {
+                updateStats(match); // 이 메서드가 Elo를 계산하고 저장합니다!
+            }
+        }
+        return "redirect:/matches?date=" + date;
     }
 }

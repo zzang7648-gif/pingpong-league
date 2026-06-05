@@ -71,8 +71,9 @@
                             <th class="table-light" th:text="${p1.name}"></th>
                             <td th:each="p2 : ${group}">
                                 <span th:if="${p1.name == p2.name}">-</span>
-                                <th:block th:each="match : ${matches}">
-                                    <div th:if="${p1.name != p2.name && ((match.player1 == p1.name && match.player2 == p2.name) || (match.player1 == p2.name && match.player2 == p1.name))}">
+                                
+                                <th:block th:if="${p1.name != p2.name}" th:each="match : ${matches}">
+                                    <div th:if="${(match.player1 == p1.name && match.player2 == p2.name) || (match.player1 == p2.name && match.player2 == p1.name)}">
                                         <input type="number" th:name="'s1_' + ${match.id}" th:value="${match.score1}" style="width: 40px;"> :
                                         <input type="number" th:name="'s2_' + ${match.id}" th:value="${match.score2}" style="width: 40px;">
                                     </div>
