@@ -8,37 +8,61 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-@Controller // @RestController 대신 @Controller 사용 (화면 응답을 위해)
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+@Controller
 public class WeatherTestController {
 
     private final WeatherApiService weatherApiService;
-    private final WeatherRepository weatherRepository; // 리포지토리 추가
+    private final WeatherRepository weatherRepository;
 
-    // 생성자 주입 방식으로 서비스와 리포지토리를 모두 받습니다.
     public WeatherTestController(WeatherApiService weatherApiService, WeatherRepository weatherRepository) {
         this.weatherApiService = weatherApiService;
         this.weatherRepository = weatherRepository;
     }
 
-    // JSON 데이터 확인용
-    @GetMapping("/api/test-weather")
-    @ResponseBody // 이 메서드는 JSON 문자열을 그대로 반환함
-    public String testWeather() {
-        return weatherApiService.fetchWeatherData();
-    }
-
-    // 날씨 화면 출력용
     @GetMapping("/weather")
     public String showWeather(Model model) {
-        // 1. 최신 정보 DB에 저장
-        weatherApiService.saveWeatherToDb(); 
-        
-        // 2. DB에서 가장 최근 데이터 조회
-        Weather latestWeather = weatherRepository.findTopByOrderByIdDesc();
-        
-        // 3. 모델에 담아서 뷰로 전달
-        model.addAttribute("weather", latestWeather);
-        
-        return "weather"; // templates/weather.html 파일을 렌더링
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyyMMdd");
+        LocalDate today = LocalDate.now();
+
+        String start = today.minusDays(1).format(fmt);
+        String end   = today.plusDays(5).format(fmt);
+
+        List<Weather> weatherList = weatherRepository.findByTargetDateBetween(start, end);
+
+        // ✅ 요일 매핑 추가
+        Map<String, String> weekdayMap = new LinkedHashMap<>();
+        String[] weekdays = {"일", "월", "화", "수", "목", "금", "토"};
+        for (Weather w : weatherList) {
+            LocalDate date = LocalDate.parse(w.getTargetDate(), fmt);
+            String weekday = weekdays[date.getDayOfWeek().getValue() % 7]; // 일=0 맞춤
+            weekdayMap.put(w.getTargetDate(), weekday);
+        }
+
+        model.addAttribute("weatherList", weatherList);
+        model.addAttribute("weekdayMap", weekdayMap);
+        model.addAttribute("today", today.format(fmt));
+        return "weather";
+    }
+
+    // ✅ 수동 갱신 엔드포인트
+    @GetMapping("/api/refresh-weather")
+    @ResponseBody
+    public String refreshWeather() {
+        weatherApiService.saveWeatherData(); // ✅ 동일한 이름
+        return "날씨 데이터 갱신 완료";
+    }
+    // 원본 JSON 확인용
+    @GetMapping("/api/test-weather")
+    @ResponseBody
+    public String testWeather() {
+        String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        return weatherApiService.fetchForecastData(today);
     }
 }

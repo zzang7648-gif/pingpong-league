@@ -4,67 +4,122 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mg.pingpong.entity.Weather;
 import com.mg.pingpong.repository.WeatherRepository;
+import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
 import java.net.URI;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 @Service
 public class WeatherApiService {
 
     private final RestTemplate restTemplate;
     private final WeatherRepository weatherRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // 생성자 주입 방식: 스프링이 restTemplate와 weatherRepository를 알아서 연결해줍니다.
+    private static final String SERVICE_KEY = "LJSEJ%2Bb6wLcg3gSGE1om97v86nYvHrOqqkhsnyKZdONL0RUNJLaZVCUYYLAuUcBX2tnfSU8hHNQni04f%2BWkHPQ%3D%3D";
+
     public WeatherApiService(RestTemplate restTemplate, WeatherRepository weatherRepository) {
         this.restTemplate = restTemplate;
         this.weatherRepository = weatherRepository;
     }
 
-    public String fetchWeatherData() {
-        String serviceKey = "LJSEJ%2Bb6wLcg3gSGE1om97v86nYvHrOqqkhsnyKZdONL0RUNJLaZVCUYYLAuUcBX2tnfSU8hHNQni04f%2BWkHPQ%3D%3D";
-        
-        String urlString = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst?" +
-                           "serviceKey=" + serviceKey +
-                           "&dataType=JSON" +
-                           "&base_date=20260604" +
-                           "&base_time=0500" +
-                           "&nx=60&ny=127";
+    @PostConstruct
+    public void init() {
+        saveWeatherData(); // ✅ 이름 통일
+    }
 
+    public String fetchForecastData(String baseDate) {
+        String url = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst?" +
+                "serviceKey=" + SERVICE_KEY +
+                "&dataType=JSON&base_date=" + baseDate +
+                "&base_time=0500&nx=60&ny=127&numOfRows=1000";
         try {
-            return restTemplate.getForObject(new URI(urlString), String.class);
+            return restTemplate.getForObject(new URI(url), String.class);
         } catch (Exception e) {
-            return "에러 발생: " + e.getMessage();
+            e.printStackTrace();
+            return null;
         }
     }
 
-    public void saveWeatherToDb() {
-        String json = fetchWeatherData();
+    public String fetchForecastData(String baseDate, String baseTime) {
+        String url = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst?" +
+                "serviceKey=" + SERVICE_KEY +
+                "&dataType=JSON&base_date=" + baseDate +
+                "&base_time=" + baseTime + "&nx=60&ny=127&numOfRows=1000";
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode root = mapper.readTree(json);
-            JsonNode items = root.path("response").path("body").path("items").path("item");
-
-            String temp = "0";
-            String pop = "0";
-
-            for (JsonNode item : items) {
-                String category = item.path("category").asText();
-                String value = item.path("fcstValue").asText();
-                
-                if ("TMP".equals(category)) temp = value;
-                if ("POP".equals(category)) pop = value;
-            }
-
-            // DB 저장
-            Weather weather = Weather.builder()
-                                    .temp(temp)
-                                    .pop(pop)
-                                    .skyStatus("3")
-                                    .build();
-            weatherRepository.save(weather);
-            
+            return restTemplate.getForObject(new URI(url), String.class);
         } catch (Exception e) {
             e.printStackTrace();
+            return null;
+        }
+    }
+
+    public void saveWeatherData() { // ✅ init()과 이름 일치
+        weatherRepository.deleteAll(); // ✅ 추가
+
+        LocalDate today = LocalDate.now();
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyyMMdd");
+        String forecastJson = fetchForecastData(today.format(fmt));
+
+        for (int i = -1; i <= 5; i++) {
+            String targetDate = today.plusDays(i).format(fmt);
+            String json = (i < 0) ? fetchForecastData(targetDate, "0500") : forecastJson;
+
+            if (json == null) {
+                System.out.println("[경고] " + targetDate + " JSON null → 스킵");
+                continue;
+            }
+
+            try {
+                JsonNode items = objectMapper.readTree(json)
+                        .path("response").path("body").path("items").path("item");
+
+                String tmn = null, tmx = null, pop = null, sky = null;
+
+                for (JsonNode item : items) {
+                    if (!item.path("fcstDate").asText().equals(targetDate)) continue;
+                    String category = item.path("category").asText();
+                    String value    = item.path("fcstValue").asText();
+                    switch (category) {
+                        case "TMN" -> { if (tmn == null) tmn = value; }
+                        case "TMX" -> { if (tmx == null) tmx = value; }
+                        case "POP" -> { if (pop == null) pop = value; }
+                        case "SKY" -> { if (sky == null) sky = value; }
+                    }
+                }
+
+                if (tmn == null || tmx == null) {
+                    for (JsonNode item : items) {
+                        if (!item.path("fcstDate").asText().equals(targetDate)) continue;
+                        if ("TMP".equals(item.path("category").asText())) {
+                            String v = item.path("fcstValue").asText();
+                            if (tmn == null) tmn = v;
+                            tmx = v;
+                        }
+                    }
+                }
+
+                if (tmn == null && tmx == null && pop == null) {
+                    System.out.println("[경고] " + targetDate + " 데이터 없음 → 스킵");
+                    continue;
+                }
+
+                Weather weather = Weather.builder()
+                        .targetDate(targetDate)
+                        .temp((tmn != null ? tmn : "?") + "/" + (tmx != null ? tmx : "?"))
+                        .pop(pop != null ? pop : "0")
+                        .skyStatus(sky != null ? sky : "1")
+                        .build();
+
+                weatherRepository.save(weather);
+                System.out.println("[저장] " + targetDate);
+
+            } catch (Exception e) {
+                System.err.println("[에러] " + targetDate + ": " + e.getMessage());
+            }
         }
     }
 }

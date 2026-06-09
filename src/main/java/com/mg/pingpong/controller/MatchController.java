@@ -36,86 +36,65 @@ public class MatchController {
         List<Player> topPlayers = playerRepository.findTop10ActivePlayers();
         List<Player> allPlayers = playerRepository.findAll();
         
-        // 1. DB에서 저장된 순서대로 매치를 가져옵니다
         List<Match> matches = matchRepository.findByMatchDate(targetDate);
 
-        // 2. 매치 데이터에서 참가자들을 '나온 순서대로' 뽑아냅니다.
         java.util.LinkedHashSet<String> participantSet = new java.util.LinkedHashSet<>();
         for (Match m : matches) {
             participantSet.add(m.getPlayer1());
             participantSet.add(m.getPlayer2());
         }
         
-        // [중요] Set을 List로 변환해서 participantNames 변수에 담아야 합니다!
         List<String> participantNames = new java.util.ArrayList<>(participantSet);
         
-        // 3. 이름 리스트를 다시 Player 객체 리스트로 매핑
         List<Player> participants = participantNames.stream()
                 .map(name -> allPlayers.stream().filter(p -> p.getName().equals(name)).findFirst().orElse(null))
                 .filter(java.util.Objects::nonNull)
                 .toList();
 
-        // 4. 이제 셔플 없이 그대로 그룹을 나눕니다.
         List<List<Player>> playerGroups = new ArrayList<>();
         int totalParticipants = participants.size();
 
         if (totalParticipants >= 10) {
             int half = (int) Math.ceil(totalParticipants / 2.0);
-            playerGroups.add(participants.subList(0, half));       // 1조
-            playerGroups.add(participants.subList(half, totalParticipants)); // 2조
+            playerGroups.add(participants.subList(0, half));
+            playerGroups.add(participants.subList(half, totalParticipants));
         } else {
             playerGroups.add(participants);
         }
 
-
-        // 5. [추가] 화면 행렬에서 점수를 찾기 쉽도록 Map을 만듭니다.
         Map<String, Match> matchMap = new java.util.HashMap<>();
         for (Match m : matches) {
-            // player1_player2 라는 키로 매치 정보를 저장
             matchMap.put(m.getPlayer1() + "_" + m.getPlayer2(), m);
-            // player2_player1 로도 검색 가능하게 양방향 저장
             matchMap.put(m.getPlayer2() + "_" + m.getPlayer1(), m);
         }
-        model.addAttribute("matchMap", matchMap);
 
+        model.addAttribute("matchMap", matchMap);
         model.addAttribute("topPlayers", topPlayers);
         model.addAttribute("players", allPlayers);
         model.addAttribute("playerGroups", playerGroups);
         model.addAttribute("matches", matches);
         model.addAttribute("selectedDate", targetDate);
 
-
-        
         return "matches";
     }
 
-    @PostMapping("/matches/save")
+   @PostMapping("/matches/save")
     @Transactional
-    public String updateMatch(@RequestParam("id") Long id, 
-                            @RequestParam("score1") int score1, 
+    public String updateMatch(@RequestParam("id") Long id,
+                            @RequestParam("score1") int score1,
                             @RequestParam("score2") int score2) {
         Match match = matchRepository.findById(id).orElseThrow();
-        
+
         if (!match.isFinished()) {
-            Player p1 = playerRepository.findByName(match.getPlayer1());
-            Player p2 = playerRepository.findByName(match.getPlayer2());
-
-            if (score1 > score2) { p1.setWin(p1.getWin() + 1); p2.setLose(p2.getLose() + 1); }
-            else if (score2 > score1) { p2.setWin(p2.getWin() + 1); p1.setLose(p1.getLose() + 1); }
-
-            double k = 32.0;
-            double expected1 = 1.0 / (1.0 + Math.pow(10, (p2.getElo() - p1.getElo()) / 400.0));
-            double expected2 = 1.0 / (1.0 + Math.pow(10, (p1.getElo() - p2.getElo()) / 400.0));
-            
-            p1.setElo(p1.getElo() + (int)(k * ((score1 > score2 ? 1.0 : 0.0) - expected1)));
-            p2.setElo(p2.getElo() + (int)(k * ((score2 > score1 ? 1.0 : 0.0) - expected2)));
-
-            playerRepository.save(p1);
-            playerRepository.save(p2);
+            match.setScore1(score1);
+            match.setScore2(score2);
             match.setFinished(true);
+            updateStats(match); // ✅ margin 포함 통일된 로직 사용
+        } else {
+            match.setScore1(score1);
+            match.setScore2(score2);
         }
-        match.setScore1(score1);
-        match.setScore2(score2);
+
         matchRepository.save(match);
         return "redirect:/matches?date=" + match.getMatchDate();
     }
@@ -128,14 +107,49 @@ public class MatchController {
         String lastDate = "";
         for (int i = 0; i < matchIds.size(); i++) {
             Match match = matchRepository.findById(matchIds.get(i)).orElseThrow();
-            match.setScore1(scores1.get(i));
-            match.setScore2(scores2.get(i));
-            match.setFinished(true);
-            updateStats(match);
-            matchRepository.save(match);
+
+            // ✅ 이미 완료된 경기는 ELO 재계산 안 함
+            if (!match.isFinished()) {
+                match.setScore1(scores1.get(i));
+                match.setScore2(scores2.get(i));
+                match.setFinished(true);
+                updateStats(match);
+                matchRepository.save(match);
+            }
+
             lastDate = match.getMatchDate();
         }
         return "redirect:/matches?date=" + lastDate;
+    }
+
+    @PostMapping("/matches/save-matrix")
+    @Transactional
+    public String saveMatrix(HttpServletRequest request) {
+        Map<String, String[]> paramMap = request.getParameterMap();
+        Set<Long> matchIds = new HashSet<>();
+        for (String key : paramMap.keySet()) {
+            if (key.startsWith("s1_") || key.startsWith("s2_")) {
+                matchIds.add(Long.parseLong(key.split("_")[1]));
+            }
+        }
+
+        String matchDate = "";
+        for (Long matchId : matchIds) {
+            Match match = matchRepository.findById(matchId).orElseThrow();
+            matchDate = match.getMatchDate();
+
+            // ✅ 이미 완료된 경기는 ELO 재계산 안 함
+            if (!match.isFinished()) {
+                String s1Val = request.getParameter("s1_" + matchId);
+                String s2Val = request.getParameter("s2_" + matchId);
+                match.setScore1(Integer.parseInt(s1Val != null ? s1Val : "0"));
+                match.setScore2(Integer.parseInt(s2Val != null ? s2Val : "0"));
+                match.setFinished(true);
+                updateStats(match);
+                matchRepository.save(match);
+            }
+        }
+        return "redirect:/matches?date=" + matchDate;
     }
 
     private void updateStats(Match match) {
@@ -144,19 +158,46 @@ public class MatchController {
         int s1 = match.getScore1();
         int s2 = match.getScore2();
 
-        if (s1 > s2) { p1.setWin(p1.getWin() + 1); p2.setLose(p2.getLose() + 1); }
-        else if (s2 > s1) { p2.setWin(p2.getWin() + 1); p1.setLose(p1.getLose() + 1); }
+        // 승패 기록
+        if (s1 > s2)      { p1.setWin(p1.getWin() + 1);  p2.setLose(p2.getLose() + 1); }
+        else if (s2 > s1) { p2.setWin(p2.getWin() + 1);  p1.setLose(p1.getLose() + 1); }
 
-        double p1Rating = p1.getElo() + (getDivisionScore(p1.getGrade()) * 0.5);
-        double p2Rating = p2.getElo() + (getDivisionScore(p2.getGrade()) * 0.5);
+        // 부수 보정 포함 레이팅
+        double r1 = p1.getElo() + getDivisionScore(p1.getGrade()) * 0.5;
+        double r2 = p2.getElo() + getDivisionScore(p2.getGrade()) * 0.5;
+
+        // 기대 승률
+        double expected1 = 1.0 / (1.0 + Math.pow(10, (r2 - r1) / 400.0));
+        double expected2 = 1.0 - expected1;
+
+        // 실제 결과 (margin 반영)
+        double actual1, actual2;
+        if (s1 > s2) {
+            actual1 = calculateMargin(s1, s2); // 1.0 ~ 1.5
+            actual2 = 0.0;
+        } else if (s2 > s1) {
+            actual1 = 0.0;
+            actual2 = calculateMargin(s2, s1);
+        } else {
+            actual1 = 0.5; // 무승부
+            actual2 = 0.5;
+        }
 
         double k = 32.0;
-        double expected1 = 1.0 / (1.0 + Math.pow(10, (p2Rating - p1Rating) / 400.0));
-        double margin1 = (s1 > s2) ? calculateMargin(s1, s2) : 0.0;
-        double delta = k * (margin1 - expected1);
-        
-        p1.setElo(p1.getElo() + (int)Math.max(2.0, delta));
-        p2.setElo(p2.getElo() - (int)Math.max(2.0, delta));
+        int delta1 = (int)(k * (actual1 - expected1));
+        int delta2 = (int)(k * (actual2 - expected2));
+
+        // ✅ 최소 변화량 보장 (승자 +2, 패자 -2)
+        if (s1 > s2) {
+            delta1 = Math.max(2, delta1);
+            delta2 = Math.min(-2, delta2);
+        } else if (s2 > s1) {
+            delta2 = Math.max(2, delta2);
+            delta1 = Math.min(-2, delta1);
+        }
+
+        p1.setElo(p1.getElo() + delta1);
+        p2.setElo(p2.getElo() + delta2);
 
         playerRepository.save(p1);
         playerRepository.save(p2);
@@ -164,50 +205,54 @@ public class MatchController {
 
     @PostMapping("/matches/generate")
     @Transactional
-    public String generateMatches(@RequestParam("matchDate") String matchDate, 
-                                @RequestParam(value = "selectedPlayerNames") List<String> selectedNames) {
-
+    public String generateMatches(@RequestParam("matchDate") String matchDate,
+                                  @RequestParam("selectedPlayerNames") List<String> selectedNames) {
         matchRepository.deleteByMatchDate(matchDate);
 
         List<String> shuffledNames = new ArrayList<>(selectedNames);
         java.util.Collections.shuffle(shuffledNames);
-        
+
         for (int i = 0; i < shuffledNames.size(); i++) {
             for (int j = i + 1; j < shuffledNames.size(); j++) {
                 Match match = new Match();
                 match.setPlayer1(shuffledNames.get(i));
                 match.setPlayer2(shuffledNames.get(j));
                 match.setMatchDate(matchDate);
-                // ... 생략
                 matchRepository.save(match);
             }
         }
         return "redirect:/matches?date=" + matchDate;
     }
-       
 
-    @PostMapping("/matches/save-matrix")
+    // ✅ recalculate-all: 전체 초기화 후 순서대로 재계산
+    @GetMapping("/matches/recalculate-all")
     @Transactional
-    public String saveMatrix(HttpServletRequest request) {
-        Map<String, String[]> paramMap = request.getParameterMap();
-        Set<Long> matchIds = new HashSet<>();
-        for (String key : paramMap.keySet()) {
-            if (key.startsWith("s1_") || key.startsWith("s2_")) matchIds.add(Long.parseLong(key.split("_")[1]));
+    public String recalculateAll(@RequestParam("date") String date) {
+        List<Match> matches = matchRepository.findByMatchDate(date);
+
+        // 해당 날짜 참가자 ELO/승패 초기화
+        Set<String> playerNames = new HashSet<>();
+        for (Match m : matches) {
+            playerNames.add(m.getPlayer1());
+            playerNames.add(m.getPlayer2());
+        }
+        for (String name : playerNames) {
+            Player p = playerRepository.findByName(name);
+            if (p != null) {
+                p.setWin(0);
+                p.setLose(0);
+                playerRepository.save(p);
+            }
         }
 
-        String matchDate = "";
-        for (Long matchId : matchIds) {
-            Match match = matchRepository.findById(matchId).orElseThrow();
-            matchDate = match.getMatchDate();
-            String s1Val = request.getParameter("s1_" + matchId);
-            String s2Val = request.getParameter("s2_" + matchId);
-            match.setScore1(Integer.parseInt(s1Val != null ? s1Val : "0"));
-            match.setScore2(Integer.parseInt(s2Val != null ? s2Val : "0"));
-            match.setFinished(true);
-            updateStats(match);
-            matchRepository.save(match);
+        // ✅ finished된 경기만 순서대로 재계산
+        for (Match match : matches) {
+            if (match.isFinished()) {
+                updateStats(match);
+            }
         }
-        return "redirect:/matches?date=" + matchDate;
+
+        return "redirect:/matches?date=" + date;
     }
 
     private int getDivisionScore(String division) {
@@ -221,20 +266,8 @@ public class MatchController {
 
     private double calculateMargin(int s1, int s2) {
         int diff = s1 - s2;
-        if (diff >= 3) return 1.5;
-        if (diff == 2) return 1.2;
-        return 1.0;
-    }
-
-    @GetMapping("/matches/recalculate-all")
-    @Transactional
-    public String recalculateAll(@RequestParam("date") String date) {
-        List<Match> matches = matchRepository.findByMatchDate(date);
-        for (Match match : matches) {
-            if (match.isFinished()) {
-                updateStats(match); // 이 메서드가 Elo를 계산하고 저장합니다!
-            }
-        }
-        return "redirect:/matches?date=" + date;
+        if (diff >= 3) return 1.5;   // 3:0 완승
+        if (diff == 2) return 1.2;   // 3:1
+        return 1.0;                  // 3:2 접전
     }
 }
