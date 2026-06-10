@@ -1,5 +1,279 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>탁구 용품 관리</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { background: #f4f5f7; font-family: 'Noto Sans KR', sans-serif; }
+
+        .page-header {
+            background: #1a1a2e;
+            color: #fff;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .page-header h2 { font-size: 1.2rem; font-weight: 700; margin: 0; }
+
+        .section-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1.25rem;
+            border: 1px solid rgba(0,0,0,0.07);
+        }
+        .section-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #888;
+            margin-bottom: 0.75rem;
+        }
+
+        /* 용품 목록 테이블 */
+        .equip-table { font-size: 0.88rem; }
+        .equip-table thead { background: #1a1a2e; color: #fff; }
+        .equip-table td, .equip-table th { padding: 0.6rem 0.75rem; vertical-align: middle; }
+
+        /* 카드형 목록 (모바일) */
+        .equip-card-list { display: none; }
+        .equip-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border: 1px solid #eee;
+        }
+        .equip-card-name {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            color: #1a1a2e;
+        }
+        .equip-card-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: #555;
+            margin-bottom: 0.25rem;
+        }
+        .equip-card-row span:first-child { color: #999; min-width: 70px; }
+        .equip-card-actions { margin-top: 0.75rem; display: flex; gap: 8px; }
+
+        @media (max-width: 768px) {
+            .equip-table-wrap { display: none; }
+            .equip-card-list { display: block; }
+        }
+
+        /* 추가 폼 */
+        .add-form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 10px;
+            align-items: end;
+        }
+
+        .search-wrap { position: relative; }
+        #equipPlayerDropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 999;
+            max-height: 160px;
+            overflow-y: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            border: 1px solid #eee;
+            background: #fff;
+        }
+        #equipPlayerDropdown .list-group-item { font-size: 0.9rem; padding: 0.6rem 1rem; }
+
+        .btn-add {
+            background: #1a1a2e;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 0.6rem 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: background 0.15s;
+            height: 42px;
+        }
+        .btn-add:hover { background: #2d2d4e; color: #fff; }
+
+        .alert-unregistered {
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            font-size: 0.88rem;
+            color: #795548;
+        }
+
+        @media (max-width: 576px) {
+            .page-header { padding: 1rem; }
+            .section-card { padding: 1rem; border-radius: 8px; }
+            .add-form-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div th:replace="~{layout/header :: header}"></div>
+
+<div class="page-header">
+    <h2>🏓 회원 탁구 용품</h2>
+</div>
+
+<div class="container-fluid px-3">
+
+    <!-- 용품 목록 -->
+    <div class="section-card">
+        <div class="section-label">등록된 용품</div>
+
+        <!-- PC: 테이블 -->
+        <div class="equip-table-wrap table-responsive">
+            <table class="table table-hover equip-table mb-0">
+                <thead>
+                    <tr>
+                        <th>선수</th>
+                        <th>탁구채</th>
+                        <th>앞면 러버</th>
+                        <th>뒷면 러버</th>
+                        <th>메모</th>
+                        <th style="width:120px;">관리</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:if="${#lists.isEmpty(equipmentList)}">
+                        <td colspan="6" class="text-muted text-center py-4">등록된 용품이 없습니다.</td>
+                    </tr>
+                    <tr th:each="e : ${equipmentList}">
+                        <td class="fw-bold" th:text="${e.playerName}"></td>
+                        <td th:text="${e.blade}"></td>
+                        <td th:text="${e.frontRubber}"></td>
+                        <td th:text="${e.backRubber}"></td>
+                        <td class="text-muted small" th:text="${e.memo}"></td>
+                        <td>
+                            <a th:href="@{/equipment/edit/{id}(id=${e.id})}"
+                               class="btn btn-sm btn-outline-primary me-1">수정</a>
+                            <form th:action="@{/equipment/delete/{id}(id=${e.id})}"
+                                  method="post" style="display:inline;"
+                                  onsubmit="return confirm('삭제하시겠습니까?')">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">삭제</button>
+                            </form>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 모바일: 카드 -->
+        <div class="equip-card-list">
+            <div th:if="${#lists.isEmpty(equipmentList)}" class="text-muted text-center py-3 small">
+                등록된 용품이 없습니다.
+            </div>
+            <div th:each="e : ${equipmentList}" class="equip-card">
+                <div class="equip-card-name" th:text="${e.playerName}"></div>
+                <div class="equip-card-row">
+                    <span>탁구채</span>
+                    <span th:text="${e.blade}"></span>
+                </div>
+                <div class="equip-card-row">
+                    <span>앞면 러버</span>
+                    <span th:text="${e.frontRubber}"></span>
+                </div>
+                <div class="equip-card-row">
+                    <span>뒷면 러버</span>
+                    <span th:text="${e.backRubber}"></span>
+                </div>
+                <div class="equip-card-row" th:if="${e.memo != null and !#strings.isEmpty(e.memo)}">
+                    <span>메모</span>
+                    <span th:text="${e.memo}" class="text-muted"></span>
+                </div>
+                <div class="equip-card-actions">
+                    <a th:href="@{/equipment/edit/{id}(id=${e.id})}"
+                       class="btn btn-sm btn-outline-primary flex-fill text-center">수정</a>
+                    <form th:action="@{/equipment/delete/{id}(id=${e.id})}"
+                          method="post" class="flex-fill"
+                          onsubmit="return confirm('삭제하시겠습니까?')">
+                        <button type="submit" class="btn btn-sm btn-outline-danger w-100">삭제</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 용품 추가 -->
+    <div class="section-card">
+        <div class="section-label">용품 추가</div>
+        <form action="/equipment/save" method="post">
+            <div class="add-form-grid">
+
+                <!-- 선수 검색 -->
+                <div>
+                    <label class="form-label small fw-bold">선수</label>
+                    <div class="search-wrap">
+                        <input type="text" id="equipPlayerSearch" class="form-control"
+                               placeholder="이름 검색"
+                               onkeyup="filterEquipPlayers()"
+                               onkeydown="if(event.key==='Enter'){event.preventDefault();selectEquipPlayer();}">
+                        <div id="equipPlayerDropdown" class="list-group" style="display:none;">
+                            <button type="button" class="list-group-item list-group-item-action"
+                                    th:each="p : ${players}"
+                                    th:data-name="${p.name}"
+                                    onclick="chooseEquipPlayer(this.getAttribute('data-name'))"
+                                    th:text="${p.name}"></button>
+                        </div>
+                    </div>
+                    <input type="hidden" name="playerName" id="equipPlayerName">
+                    <span id="equipPlayerBadge" class="badge bg-primary mt-1" style="display:none; cursor:pointer;"></span>
+                </div>
+
+                <div>
+                    <label class="form-label small fw-bold">탁구채</label>
+                    <input type="text" name="blade" class="form-control" placeholder="예) 삼소노프" required>
+                </div>
+                <div>
+                    <label class="form-label small fw-bold">앞면 러버</label>
+                    <input type="text" name="frontRubber" class="form-control" placeholder="예) 테너지05" required>
+                </div>
+                <div>
+                    <label class="form-label small fw-bold">뒷면 러버</label>
+                    <input type="text" name="backRubber" class="form-control" placeholder="예) 로제나" required>
+                </div>
+                <div>
+                    <label class="form-label small fw-bold">메모</label>
+                    <input type="text" name="memo" class="form-control" placeholder="선택사항">
+                </div>
+                <div>
+                    <label class="form-label small fw-bold" style="visibility:hidden;">추가</label>
+                    <button type="submit" class="btn-add" onclick="return validateEquipForm()">추가</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- 미등록 선수 안내 -->
+    <div th:if="${!#lists.isEmpty(unregisteredPlayers)}" class="alert-unregistered mb-3">
+        <strong>용품 미등록 선수:</strong>
+        <span th:each="p, i : ${unregisteredPlayers}">
+            <span th:text="${p.name}"></span><span th:if="${!i.last}">, </span>
+        </span>
+    </div>
+
+    <div class="text-center mb-5">
+        <a href="/" class="btn btn-outline-secondary">홈으로</a>
+    </div>
+
+</div>
+
 <script>
     function filterEquipPlayers() {
         const input = document.getElementById('equipPlayerSearch');
@@ -15,16 +289,12 @@
     function selectEquipPlayer() {
         const input = document.getElementById('equipPlayerSearch');
         const val = input.value.trim();
-        const dropdown = document.getElementById('equipPlayerDropdown');
-        const buttons = Array.from(dropdown.querySelectorAll('button'));
+        const buttons = Array.from(document.getElementById('equipPlayerDropdown').querySelectorAll('button'));
         const matched = buttons.find(b => b.style.display !== 'none' && b.innerText.trim() === val);
+        const first = buttons.find(b => b.style.display !== 'none');
         if (matched) chooseEquipPlayer(matched.innerText.trim());
-        else {
-            // 보이는 첫 번째 버튼 자동 선택
-            const first = buttons.find(b => b.style.display !== 'none');
-            if (first) chooseEquipPlayer(first.innerText.trim());
-            else alert('선수를 찾을 수 없습니다.');
-        }
+        else if (first) chooseEquipPlayer(first.innerText.trim());
+        else alert('선수를 찾을 수 없습니다.');
     }
 
     function chooseEquipPlayer(name) {
@@ -35,7 +305,6 @@
         const badge = document.getElementById('equipPlayerBadge');
         badge.textContent = name + ' ✕';
         badge.style.display = 'inline-block';
-        badge.style.cursor = 'pointer';
         badge.onclick = () => {
             document.getElementById('equipPlayerName').value = '';
             badge.style.display = 'none';
@@ -50,121 +319,11 @@
         return true;
     }
 
-    // 드롭다운 외부 클릭 시 닫기
     document.addEventListener('click', e => {
         if (!e.target.closest('#equipPlayerSearch') && !e.target.closest('#equipPlayerDropdown')) {
             document.getElementById('equipPlayerDropdown').style.display = 'none';
         }
     });
-
 </script>
-<head>
-    <meta charset="UTF-8">
-    <title>탁구 용품 관리</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="container mt-4">
-    <div th:replace="~{layout/header :: header}"></div>
-
-    <h3 class="mb-4 fw-bold">🏓 회원 탁구 용품</h3>
-
-    <!-- 용품 목록 -->
-    <div class="table-responsive mb-5">
-        <table class="table table-bordered table-hover align-middle text-center">
-            <thead class="table-dark">
-                <tr>
-                    <th>선수</th>
-                    <th>탁구채</th>
-                    <th>앞면 러버</th>
-                    <th>뒷면 러버</th>
-                    <th>메모</th>
-                    <th>관리</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr th:if="${#lists.isEmpty(equipmentList)}">
-                    <td colspan="6" class="text-muted">등록된 용품이 없습니다.</td>
-                </tr>
-                <tr th:each="e : ${equipmentList}">
-                    <td class="fw-bold" th:text="${e.playerName}"></td>
-                    <td th:text="${e.blade}"></td>
-                    <td th:text="${e.frontRubber}"></td>
-                    <td th:text="${e.backRubber}"></td>
-                    <td class="text-muted small" th:text="${e.memo}"></td>
-                    <td>
-                        <a th:href="@{/equipment/edit/{id}(id=${e.id})}"
-                           class="btn btn-sm btn-outline-primary me-1">수정</a>
-                        <form th:action="@{/equipment/delete/{id}(id=${e.id})}"
-                              method="post" style="display:inline;"
-                              onsubmit="return confirm('삭제하시겠습니까?')">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">삭제</button>
-                        </form>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- 용품 추가 폼 -->
-    <div class="card shadow-sm p-4 mb-5">
-        <h5 class="fw-bold mb-3">용품 추가</h5>
-        <form action="/equipment/save" method="post">
-            <div class="row g-2 mb-2">
-
-                <!-- 선수 검색 -->
-                <div class="col-md-2">
-                    <label class="form-label small fw-bold">선수</label>
-                    <input type="text" id="equipPlayerSearch" class="form-control"
-                        placeholder="이름 검색"
-                        onkeyup="filterEquipPlayers()"
-                        onkeydown="if(event.key==='Enter'){event.preventDefault(); selectEquipPlayer();}">
-                    <div id="equipPlayerDropdown" class="list-group mt-1"
-                        style="max-height:150px; overflow-y:auto; display:none; position:absolute; z-index:999; width:160px;">
-                        <button type="button" class="list-group-item list-group-item-action"
-                                th:each="p : ${players}"
-                                th:data-name="${p.name}"
-                                onclick="chooseEquipPlayer(this.getAttribute('data-name'))"
-                                th:text="${p.name}"></button>
-                    </div>
-                    <!-- 선택된 선수명 hidden -->
-                    <input type="hidden" name="playerName" id="equipPlayerName">
-                    <span id="equipPlayerBadge" class="badge bg-primary mt-1" style="display:none;"></span>
-                </div>
-
-                <div class="col-md-2">
-                    <label class="form-label small fw-bold">탁구채</label>
-                    <input type="text" name="blade" class="form-control" placeholder="예) 삼소노프" required>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label small fw-bold">앞면 러버</label>
-                    <input type="text" name="frontRubber" class="form-control" placeholder="예) 테너지05" required>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label small fw-bold">뒷면 러버</label>
-                    <input type="text" name="backRubber" class="form-control" placeholder="예) 로제나" required>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label small fw-bold">메모</label>
-                    <input type="text" name="memo" class="form-control" placeholder="선택사항">
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-success w-100"
-                            onclick="return validateEquipForm()">추가</button>
-                </div>
-            </div>
-        </form>
-    </div>
-
-    <!-- 미등록 선수 안내 -->
-    <div th:if="${!#lists.isEmpty(unregisteredPlayers)}" class="alert alert-warning">
-        <strong>용품 미등록 선수:</strong>
-        <span th:each="p, i : ${unregisteredPlayers}">
-            <span th:text="${p.name}"></span><span th:if="${!i.last}">, </span>
-        </span>
-    </div>
-
-    <div class="text-center mt-3">
-        <a href="/" class="btn btn-outline-secondary">홈으로</a>
-    </div>
 </body>
 </html>

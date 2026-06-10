@@ -2,35 +2,76 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>탁구 소모임 홈</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+
+        /* 모바일에서 버튼 텍스트 크기 조정 */
+        @media (max-width: 576px) {
+            .btn-lg { font-size: 1rem; padding: 0.6rem 1rem; }
+            h1 { font-size: 1.5rem; }
+        }
+    </style>
 </head>
-<body class="container mt-5 text-center">
-    
-    <div class="row justify-content-center mb-5">
-        <div class="col-md-3" th:each="w : ${threeDaysWeather}">
-            <div class="card shadow-sm border-0 bg-light h-100">
-                <div class="card-body">
-                    <h6 class="card-subtitle mb-2 text-muted" th:text="${w.targetDate}">날짜</h6>
-                    <h4 class="card-title fw-bold" th:text="${w.temp} + '℃'"></h4>
-                    <p class="card-text small mb-0">강수확률: <span th:text="${w.pop}"></span>%</p>
+    <body class="mt-4 mt-md-5">
+        <div class="container">
+
+            <!-- 날씨 3일치 -->
+            <div class="row g-2 justify-content-center mb-4">
+                <div class="col-4 col-md-3" th:each="w : ${threeDaysWeather}">
+                    <div class="card shadow-sm border-0 bg-light h-100 text-center">
+                        <div class="card-body p-2 p-md-3">
+                            <h6 class="card-subtitle mb-1 text-muted small"
+                                th:text="${#strings.substring(w.targetDate,4,6) + '.' + #strings.substring(w.targetDate,6,8)}">
+                                날짜
+                            </h6>
+                            <h5 class="card-title fw-bold mb-1" th:text="${w.temp} + '℃'"></h5>
+                            <p class="card-text small mb-0 text-muted">
+                                강수 <span th:text="${w.pop}"></span>%
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <!-- 타이틀 -->
+            <div class="text-center mb-4">
+                <h1 class="fw-bold">환영합니다! 탁구 리그 시스템</h1>
+                <p class="text-muted">한수부탁 탁구 리그 관리를 위한 시스템입니다.</p>
+            </div>
+
+            <!-- 버튼 목록 -->
+            <!-- PC: 2열 그리드 / 모바일: 1열 -->
+            <div class="row g-2 col-12 col-md-8 col-lg-6 mx-auto mb-5">
+                <div class="col-12 col-sm-6">
+                    <a href="/intro" class="btn btn-lg btn-outline-primary shadow-sm w-100">한수부탁 소개</a>
+                </div>
+                <div class="col-12 col-sm-6">
+                    <a href="/players" class="btn btn-lg btn-secondary shadow-sm w-100">선수 명단 보기</a>
+                </div>
+                <div class="col-12 col-sm-6">
+                    <a href="/matches" class="btn btn-lg btn-success shadow-sm w-100">오늘의 리그 시작하기</a>
+                </div>
+                <div class="col-12 col-sm-6">
+                    <a href="/elo" class="btn btn-lg btn-outline-dark shadow-sm w-100">ELO 레이팅 설명</a>
+                </div>
+                <div class="col-12 col-sm-6">
+                    <a href="/players/membership" class="btn btn-lg btn-warning text-white shadow-sm w-100">연회비 관리</a>
+                </div>
+                <div class="col-12 col-sm-6">
+                    <a href="/board" class="btn btn-lg btn-info text-white shadow-sm w-100">익명 게시판</a>
+                </div>
+                <div class="col-12 col-sm-6">
+                    <a href="/equipment" class="btn btn-lg btn-outline-dark shadow-sm w-100">🏓 회원 용품</a>
+                </div>
+                <div class="col-12 col-sm-6">
+                    <a href="/weather" class="btn btn-lg btn-outline-secondary shadow-sm w-100">날씨 상세 정보</a>
+                </div>
+                
+            </div>
+
         </div>
-    </div>
-
-    <h1 class="mb-4 fw-bold">환영합니다! 탁구 리그 시스템</h1>
-    <p class="text-muted mb-5">한수부탁 탁구 리그 관리를 위한 시스템입니다.</p>
-
-   <div class="mt-5 d-grid gap-3 col-6 mx-auto">
-        <a href="/intro" class="btn btn-lg btn-outline-primary shadow-sm">한수부탁 소개</a>
-        <a href="/players" class="btn btn-lg btn-secondary shadow-sm">선수 명단 보기</a>
-        <a href="/elo" class="btn btn-lg btn-outline-dark shadow-sm">ELO 레이팅 설명</a>
-        <a href="/matches" class="btn btn-lg btn-success shadow-sm">오늘의 리그 시작하기</a>
-        <a href="/players/membership" class="btn btn-lg btn-warning text-white shadow-sm">연회비 관리</a>
-        <a href="/board" class="btn btn-lg btn-info text-white shadow-sm">익명 게시판</a>
-        <a href="/weather" class="btn btn-lg btn-outline-secondary shadow-sm mt-2">오늘의 날씨 상세 정보</a>
-        <a href="/equipment" class="btn btn-lg btn-outline-dark shadow-sm">🏓 한수부탁 회원 용품 </a>
-    </div>
-</body>
+    </body>
 </html>
