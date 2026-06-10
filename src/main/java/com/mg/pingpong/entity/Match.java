@@ -17,7 +17,7 @@ public class Match {
     private int score2;
 
     // 경기 완료 여부 추가 (기본값 false)
-    private boolean isFinished = false;
+    private boolean finished = false;
 
     // Getter, Setter
     public Long getId() { return id; }
@@ -34,8 +34,8 @@ public class Match {
     public int getScore2() { return score2; }
     public void setScore2(int score2) { this.score2 = score2; }
 
-    public boolean isFinished() { return isFinished; }
-    public void setFinished(boolean finished) { isFinished = finished; }
+    public boolean isFinished() { return finished; }
+    public void setFinished(boolean finished) { this.finished = finished; }
 
 
     // Match.java

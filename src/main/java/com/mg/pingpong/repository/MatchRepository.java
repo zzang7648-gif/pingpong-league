@@ -12,4 +12,6 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
     List<Match> findByMatchDate(String matchDate);
     void deleteByMatchDate(String matchDate);
 
+    List<Match> findAllByFinishedTrueOrderByIdAsc();
+
 }

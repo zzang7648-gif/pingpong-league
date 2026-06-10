@@ -15,10 +15,10 @@
                 <thead><tr><th>이름</th><th>승</th><th>패</th><th>ELO</th></tr></thead>
                 <tbody>
                     <tr th:each="player : ${topPlayers}">
-                        <td th:text="${player.name}"></td>
-                        <td th:text="${player.win}"></td>
-                        <td th:text="${player.lose}"></td>
-                        <td th:text="${player.elo}"></td>
+                        <td th:text="${player['name']}"></td>
+                        <td th:text="${player['win']}"></td>
+                        <td th:text="${player['lose']}"></td>
+                        <td th:text="${player['elo']}"></td>
                     </tr>
                 </tbody>
             </table>
@@ -32,7 +32,7 @@
                 <form action="/matches/generate" method="post" id="leagueForm">
                     <div class="mb-3">
                         <label for="leagueDate" class="form-label fw-bold">리그 날짜</label>
-                        <input type="date" id="leagueDate" name="matchDate" class="form-control" required>
+                        <input type="date" id="leagueDate" name="matchDate" class="form-control" required onchange="location.href='/matches?date=' + this.value">
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">참가 선수 검색</label>
@@ -55,40 +55,82 @@
         </div>
     </div>
 
+     <!--3번 -->
     <div class="row" th:if="${playerGroups != null}">
-        <div class="col-12" th:each="group : ${playerGroups}">
-            <h3 class="mt-4 text-primary">리그 조 (총 [[${group.size()}]]명)</h3>
+        <div class="col-12" th:each="group, groupStat : ${playerGroups}">
+            <h3 class="mt-4 text-primary">
+                [[${playerGroups.size() > 1 ? (groupStat.index + 1) + '조' : '리그'}]]
+                (총 [[${group.size()}]]명)
+            </h3>
             <form action="/matches/save-matrix" method="post">
-                <table class="table table-bordered table-sm text-center align-middle">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>선수</th>
-                            <th th:each="p : ${group}" th:text="${p.name}"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr th:each="p1 : ${group}">
-                            <th class="table-light" th:text="${p1.name}"></th>
-                            <td th:each="p2 : ${group}">
-                                <span th:if="${p1.name == p2.name}">-</span>
-                                
-                                <th:block th:if="${p1.name != p2.name}" th:each="match : ${matches}">
-                                    <div th:if="${(match.player1 == p1.name && match.player2 == p2.name) || (match.player1 == p2.name && match.player2 == p1.name)}">
-                                        <input type="number" th:name="'s1_' + ${match.id}" th:value="${match.score1}" style="width: 40px;"> :
-                                        <input type="number" th:name="'s2_' + ${match.id}" th:value="${match.score2}" style="width: 40px;">
-                                    </div>
-                                </th:block>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div style="overflow-x: auto;">
+                    <table class="table table-bordered text-center align-middle" style="table-layout: fixed; min-width: 400px;">
+                        <thead class="table-dark">
+                            <tr>
+                                <th style="width: 80px;">선수</th>
+                                <th th:each="p : ${group}" th:text="${p.name}" style="width: 75px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="p1 : ${group}">
+                                <th class="table-light" th:text="${p1.name}"></th>
+                                <td th:each="p2 : ${group}" style="height: 55px; vertical-align: middle;">
+
+                                    <span th:if="${p1.name == p2.name}">-</span>
+
+                                    <th:block th:if="${p1.name != p2.name}">
+                                        <th:block th:with="match=${matchMap[p1.name + '_' + p2.name]}">
+                                            <div th:if="${match != null}">
+
+                                               <!-- p1이 player1: 입력 칸 -->
+                                                <th:block th:if="${match.player1 == p1.name}">
+                                                    <th:block th:if="${match.finished}">
+                                                        <strong th:class="${match.score1 > match.score2} ? 'text-success' : 'text-danger'"
+                                                                th:text="${match.score1}"></strong>
+                                                    </th:block>
+                                                    <th:block th:if="${!match.finished}">
+                                                        <select th:name="'s1_' + ${match.id}"
+                                                                th:id="'s1_' + ${match.id}"
+                                                                onchange="autoFill(this)"
+                                                                style="width:50px; display:block; margin:auto; border:1px solid #ccc; border-radius:6px; text-align:center; font-weight:bold; font-size:1rem; padding:4px 0; cursor:pointer; appearance:none; -webkit-appearance:none; background:#fff;">
+                                                            <option value="">-</option>
+                                                            <option value="3">3</option>
+                                                            <option value="2">2</option>
+                                                            <option value="1">1</option>
+                                                            <option value="0">0</option>
+                                                        </select>
+                                                        <input type="hidden" th:name="'s2_' + ${match.id}" th:id="'s2_' + ${match.id}" value="">
+                                                    </th:block>
+                                                </th:block>
+
+                                                <!-- p1이 player2: 자동 표시 칸 -->
+                                                <th:block th:if="${match.player2 == p1.name}">
+                                                    <th:block th:if="${match.finished}">
+                                                        <strong th:class="${match.score2 > match.score1} ? 'text-success' : 'text-danger'"
+                                                                th:text="${match.score2}"></strong>
+                                                    </th:block>
+                                                    <th:block th:if="${!match.finished}">
+                                                        <span th:id="'mirror_' + ${match.id}" style="font-weight:bold; color:#aaa;">-</span>
+                                                    </th:block>
+                                                </th:block>
+
+                                            </div>
+                                        </th:block>
+                                    </th:block>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
                 <button type="submit" class="btn btn-primary w-100 mb-4">현재 조 리그 결과 일괄 저장</button>
             </form>
         </div>
     </div>
 
     <script>
-        document.getElementById('leagueDate').valueAsDate = new Date();
+        const urlParams = new URLSearchParams(window.location.search);
+        const dateParam = urlParams.get('date');
+        document.getElementById('leagueDate').value = dateParam || new Date().toISOString().split('T')[0];
 
         function filterPlayers() {
             const input = document.getElementById('playerSearch');
@@ -124,6 +166,40 @@
             document.getElementById('playerSearch').value = '';
             document.getElementById('playerDropdown').style.display = 'none';
         }
+
+    
+        function autoFill(sel) {
+                const id = sel.id.replace('s1_', '');
+                const val = parseInt(sel.value);
+                const hiddenS2 = document.getElementById('s2_' + id);
+                const mirror = document.getElementById('mirror_' + id);
+
+                if (sel.value === '') {
+                    if (hiddenS2) hiddenS2.value = '';
+                    if (mirror) { mirror.textContent = '-'; mirror.style.color = '#aaa'; }
+                    sel.style.color = '#333';
+                    return;
+                }
+
+                if (val === 3) {
+                    // 내가 3 → 상대 세트 수 직접 입력
+                    const lost = prompt('상대방 세트 수 (0, 1, 2):');
+                    if (lost === null || !['0','1','2'].includes(lost)) {
+                        sel.value = '';
+                        if (hiddenS2) hiddenS2.value = '';
+                        if (mirror) { mirror.textContent = '-'; mirror.style.color = '#aaa'; }
+                        return;
+                    }
+                    hiddenS2.value = lost;
+                    sel.style.color = '#198754';
+                    if (mirror) { mirror.textContent = lost; mirror.style.color = '#dc3545'; }
+                } else {
+                    // 내가 0/1/2 → 상대 자동으로 3
+                    hiddenS2.value = 3;
+                    sel.style.color = '#dc3545';
+                    if (mirror) { mirror.textContent = '3'; mirror.style.color = '#198754'; }
+                }
+            }
     </script>
 </body>
 </html>

@@ -3,6 +3,7 @@ package com.mg.pingpong.controller;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.HashSet;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import com.mg.pingpong.entity.Match;
 import com.mg.pingpong.entity.Player;
 import com.mg.pingpong.repository.MatchRepository;
 import com.mg.pingpong.repository.PlayerRepository;
+import com.mg.pingpong.service.EloCalculationService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.LinkedHashSet;
@@ -25,27 +27,49 @@ public class MatchController {
 
     @Autowired
     private MatchRepository matchRepository;
-    
+
     @Autowired
     private PlayerRepository playerRepository;
-    
+
+    @Autowired
+    private EloCalculationService eloCalculationService;
+
     @GetMapping("/matches")
     public String matches(Model model, @RequestParam(value = "date", required = false) String date) {
         String targetDate = (date != null) ? date : java.time.LocalDate.now().toString();
 
-        List<Player> topPlayers = playerRepository.findTop10ActivePlayers();
         List<Player> allPlayers = playerRepository.findAll();
-        
         List<Match> matches = matchRepository.findByMatchDate(targetDate);
 
-        java.util.LinkedHashSet<String> participantSet = new java.util.LinkedHashSet<>();
+        // ✅ match 기록으로 ELO/승패 실시간 계산
+        Map<String, Integer> eloMap = eloCalculationService.calculateAllElo();
+        Map<String, int[]> winLoseMap = eloCalculationService.calculateWinLose();
+
+        // ✅ TOP10: ELO 기준 정렬 (경기 기록 있는 선수만)
+        List<Map<String, Object>> topPlayers = allPlayers.stream()
+            .filter(p -> winLoseMap.containsKey(p.getName()))
+            .map(p -> {
+                Map<String, Object> m = new HashMap<>();
+                m.put("name", p.getName());
+                m.put("elo", eloMap.getOrDefault(p.getName(), 1500));
+                int[] wl = winLoseMap.getOrDefault(p.getName(), new int[]{0, 0});
+                m.put("win", wl[0]);
+                m.put("lose", wl[1]);
+                return m;
+            })
+            .sorted((a, b) -> (int) b.get("elo") - (int) a.get("elo"))
+            .limit(10)
+            .toList();
+
+        // 참가자 추출
+        LinkedHashSet<String> participantSet = new LinkedHashSet<>();
         for (Match m : matches) {
             participantSet.add(m.getPlayer1());
             participantSet.add(m.getPlayer2());
         }
-        
-        List<String> participantNames = new java.util.ArrayList<>(participantSet);
-        
+
+        List<String> participantNames = new ArrayList<>(participantSet);
+
         List<Player> participants = participantNames.stream()
                 .map(name -> allPlayers.stream().filter(p -> p.getName().equals(name)).findFirst().orElse(null))
                 .filter(java.util.Objects::nonNull)
@@ -62,7 +86,7 @@ public class MatchController {
             playerGroups.add(participants);
         }
 
-        Map<String, Match> matchMap = new java.util.HashMap<>();
+        Map<String, Match> matchMap = new HashMap<>();
         for (Match m : matches) {
             matchMap.put(m.getPlayer1() + "_" + m.getPlayer2(), m);
             matchMap.put(m.getPlayer2() + "_" + m.getPlayer1(), m);
@@ -78,24 +102,19 @@ public class MatchController {
         return "matches";
     }
 
-   @PostMapping("/matches/save")
+    @PostMapping("/matches/save")
     @Transactional
     public String updateMatch(@RequestParam("id") Long id,
-                            @RequestParam("score1") int score1,
-                            @RequestParam("score2") int score2) {
+                              @RequestParam("score1") int score1,
+                              @RequestParam("score2") int score2) {
         Match match = matchRepository.findById(id).orElseThrow();
 
-        if (!match.isFinished()) {
-            match.setScore1(score1);
-            match.setScore2(score2);
-            match.setFinished(true);
-            updateStats(match); // ✅ margin 포함 통일된 로직 사용
-        } else {
-            match.setScore1(score1);
-            match.setScore2(score2);
-        }
-
+        // ✅ players 테이블 건드리지 않고 match만 저장
+        match.setScore1(score1);
+        match.setScore2(score2);
+        match.setFinished(true);
         matchRepository.save(match);
+
         return "redirect:/matches?date=" + match.getMatchDate();
     }
 
@@ -108,12 +127,10 @@ public class MatchController {
         for (int i = 0; i < matchIds.size(); i++) {
             Match match = matchRepository.findById(matchIds.get(i)).orElseThrow();
 
-            // ✅ 이미 완료된 경기는 ELO 재계산 안 함
             if (!match.isFinished()) {
                 match.setScore1(scores1.get(i));
                 match.setScore2(scores2.get(i));
                 match.setFinished(true);
-                updateStats(match);
                 matchRepository.save(match);
             }
 
@@ -138,69 +155,19 @@ public class MatchController {
             Match match = matchRepository.findById(matchId).orElseThrow();
             matchDate = match.getMatchDate();
 
-            // ✅ 이미 완료된 경기는 ELO 재계산 안 함
             if (!match.isFinished()) {
                 String s1Val = request.getParameter("s1_" + matchId);
                 String s2Val = request.getParameter("s2_" + matchId);
-                match.setScore1(Integer.parseInt(s1Val != null ? s1Val : "0"));
-                match.setScore2(Integer.parseInt(s2Val != null ? s2Val : "0"));
+
+                if (s1Val == null || s2Val == null || s1Val.isEmpty() || s2Val.isEmpty()) continue;
+
+                match.setScore1(Integer.parseInt(s1Val));
+                match.setScore2(Integer.parseInt(s2Val));
                 match.setFinished(true);
-                updateStats(match);
                 matchRepository.save(match);
             }
         }
         return "redirect:/matches?date=" + matchDate;
-    }
-
-    private void updateStats(Match match) {
-        Player p1 = playerRepository.findByName(match.getPlayer1());
-        Player p2 = playerRepository.findByName(match.getPlayer2());
-        int s1 = match.getScore1();
-        int s2 = match.getScore2();
-
-        // 승패 기록
-        if (s1 > s2)      { p1.setWin(p1.getWin() + 1);  p2.setLose(p2.getLose() + 1); }
-        else if (s2 > s1) { p2.setWin(p2.getWin() + 1);  p1.setLose(p1.getLose() + 1); }
-
-        // 부수 보정 포함 레이팅
-        double r1 = p1.getElo() + getDivisionScore(p1.getGrade()) * 0.5;
-        double r2 = p2.getElo() + getDivisionScore(p2.getGrade()) * 0.5;
-
-        // 기대 승률
-        double expected1 = 1.0 / (1.0 + Math.pow(10, (r2 - r1) / 400.0));
-        double expected2 = 1.0 - expected1;
-
-        // 실제 결과 (margin 반영)
-        double actual1, actual2;
-        if (s1 > s2) {
-            actual1 = calculateMargin(s1, s2); // 1.0 ~ 1.5
-            actual2 = 0.0;
-        } else if (s2 > s1) {
-            actual1 = 0.0;
-            actual2 = calculateMargin(s2, s1);
-        } else {
-            actual1 = 0.5; // 무승부
-            actual2 = 0.5;
-        }
-
-        double k = 32.0;
-        int delta1 = (int)(k * (actual1 - expected1));
-        int delta2 = (int)(k * (actual2 - expected2));
-
-        // ✅ 최소 변화량 보장 (승자 +2, 패자 -2)
-        if (s1 > s2) {
-            delta1 = Math.max(2, delta1);
-            delta2 = Math.min(-2, delta2);
-        } else if (s2 > s1) {
-            delta2 = Math.max(2, delta2);
-            delta1 = Math.min(-2, delta1);
-        }
-
-        p1.setElo(p1.getElo() + delta1);
-        p2.setElo(p2.getElo() + delta2);
-
-        playerRepository.save(p1);
-        playerRepository.save(p2);
     }
 
     @PostMapping("/matches/generate")
@@ -224,34 +191,9 @@ public class MatchController {
         return "redirect:/matches?date=" + matchDate;
     }
 
-    // ✅ recalculate-all: 전체 초기화 후 순서대로 재계산
+    // ✅ recalculate-all 불필요하지만 혹시 몰라 리다이렉트만 남김
     @GetMapping("/matches/recalculate-all")
-    @Transactional
     public String recalculateAll(@RequestParam("date") String date) {
-        List<Match> matches = matchRepository.findByMatchDate(date);
-
-        // 해당 날짜 참가자 ELO/승패 초기화
-        Set<String> playerNames = new HashSet<>();
-        for (Match m : matches) {
-            playerNames.add(m.getPlayer1());
-            playerNames.add(m.getPlayer2());
-        }
-        for (String name : playerNames) {
-            Player p = playerRepository.findByName(name);
-            if (p != null) {
-                p.setWin(0);
-                p.setLose(0);
-                playerRepository.save(p);
-            }
-        }
-
-        // ✅ finished된 경기만 순서대로 재계산
-        for (Match match : matches) {
-            if (match.isFinished()) {
-                updateStats(match);
-            }
-        }
-
         return "redirect:/matches?date=" + date;
     }
 
@@ -262,12 +204,5 @@ public class MatchController {
             case "5부" -> 1200; case "6부" -> 1000; case "7부" -> 800; case "8부" -> 600;
             default -> 500;
         };
-    }
-
-    private double calculateMargin(int s1, int s2) {
-        int diff = s1 - s2;
-        if (diff >= 3) return 1.5;   // 3:0 완승
-        if (diff == 2) return 1.2;   // 3:1
-        return 1.0;                  // 3:2 접전
     }
 }

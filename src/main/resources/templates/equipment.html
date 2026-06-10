@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<script>
+    function filterEquipPlayers() {
+        const input = document.getElementById('equipPlayerSearch');
+        const filter = input.value.toUpperCase();
+        const dropdown = document.getElementById('equipPlayerDropdown');
+        const buttons = dropdown.getElementsByTagName('button');
+        dropdown.style.display = input.value ? 'block' : 'none';
+        for (let b of buttons) {
+            b.style.display = b.innerText.toUpperCase().indexOf(filter) > -1 ? '' : 'none';
+        }
+    }
+
+    function selectEquipPlayer() {
+        const input = document.getElementById('equipPlayerSearch');
+        const val = input.value.trim();
+        const dropdown = document.getElementById('equipPlayerDropdown');
+        const buttons = Array.from(dropdown.querySelectorAll('button'));
+        const matched = buttons.find(b => b.style.display !== 'none' && b.innerText.trim() === val);
+        if (matched) chooseEquipPlayer(matched.innerText.trim());
+        else {
+            // 보이는 첫 번째 버튼 자동 선택
+            const first = buttons.find(b => b.style.display !== 'none');
+            if (first) chooseEquipPlayer(first.innerText.trim());
+            else alert('선수를 찾을 수 없습니다.');
+        }
+    }
+
+    function chooseEquipPlayer(name) {
+        document.getElementById('equipPlayerName').value = name;
+        document.getElementById('equipPlayerSearch').value = '';
+        document.getElementById('equipPlayerDropdown').style.display = 'none';
+
+        const badge = document.getElementById('equipPlayerBadge');
+        badge.textContent = name + ' ✕';
+        badge.style.display = 'inline-block';
+        badge.style.cursor = 'pointer';
+        badge.onclick = () => {
+            document.getElementById('equipPlayerName').value = '';
+            badge.style.display = 'none';
+        };
+    }
+
+    function validateEquipForm() {
+        if (!document.getElementById('equipPlayerName').value) {
+            alert('선수를 선택해주세요.');
+            return false;
+        }
+        return true;
+    }
+
+    // 드롭다운 외부 클릭 시 닫기
+    document.addEventListener('click', e => {
+        if (!e.target.closest('#equipPlayerSearch') && !e.target.closest('#equipPlayerDropdown')) {
+            document.getElementById('equipPlayerDropdown').style.display = 'none';
+        }
+    });
+
+</script>
+<head>
+    <meta charset="UTF-8">
+    <title>탁구 용품 관리</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="container mt-4">
+    <div th:replace="~{layout/header :: header}"></div>
+
+    <h3 class="mb-4 fw-bold">🏓 회원 탁구 용품</h3>
+
+    <!-- 용품 목록 -->
+    <div class="table-responsive mb-5">
+        <table class="table table-bordered table-hover align-middle text-center">
+            <thead class="table-dark">
+                <tr>
+                    <th>선수</th>
+                    <th>탁구채</th>
+                    <th>앞면 러버</th>
+                    <th>뒷면 러버</th>
+                    <th>메모</th>
+                    <th>관리</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:if="${#lists.isEmpty(equipmentList)}">
+                    <td colspan="6" class="text-muted">등록된 용품이 없습니다.</td>
+                </tr>
+                <tr th:each="e : ${equipmentList}">
+                    <td class="fw-bold" th:text="${e.playerName}"></td>
+                    <td th:text="${e.blade}"></td>
+                    <td th:text="${e.frontRubber}"></td>
+                    <td th:text="${e.backRubber}"></td>
+                    <td class="text-muted small" th:text="${e.memo}"></td>
+                    <td>
+                        <a th:href="@{/equipment/edit/{id}(id=${e.id})}"
+                           class="btn btn-sm btn-outline-primary me-1">수정</a>
+                        <form th:action="@{/equipment/delete/{id}(id=${e.id})}"
+                              method="post" style="display:inline;"
+                              onsubmit="return confirm('삭제하시겠습니까?')">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">삭제</button>
+                        </form>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 용품 추가 폼 -->
+    <div class="card shadow-sm p-4 mb-5">
+        <h5 class="fw-bold mb-3">용품 추가</h5>
+        <form action="/equipment/save" method="post">
+            <div class="row g-2 mb-2">
+
+                <!-- 선수 검색 -->
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">선수</label>
+                    <input type="text" id="equipPlayerSearch" class="form-control"
+                        placeholder="이름 검색"
+                        onkeyup="filterEquipPlayers()"
+                        onkeydown="if(event.key==='Enter'){event.preventDefault(); selectEquipPlayer();}">
+                    <div id="equipPlayerDropdown" class="list-group mt-1"
+                        style="max-height:150px; overflow-y:auto; display:none; position:absolute; z-index:999; width:160px;">
+                        <button type="button" class="list-group-item list-group-item-action"
+                                th:each="p : ${players}"
+                                th:data-name="${p.name}"
+                                onclick="chooseEquipPlayer(this.getAttribute('data-name'))"
+                                th:text="${p.name}"></button>
+                    </div>
+                    <!-- 선택된 선수명 hidden -->
+                    <input type="hidden" name="playerName" id="equipPlayerName">
+                    <span id="equipPlayerBadge" class="badge bg-primary mt-1" style="display:none;"></span>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">탁구채</label>
+                    <input type="text" name="blade" class="form-control" placeholder="예) 삼소노프" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">앞면 러버</label>
+                    <input type="text" name="frontRubber" class="form-control" placeholder="예) 테너지05uired>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">뒷면 러버</label>
+                    <input type="text" name="backRubber" class="form-control" placeholder="예) 로제나" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">메모</label>
+                    <input type="text" name="memo" class="form-control" placeholder="선택사항">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-success w-100"
+                            onclick="return validateEquipForm()">추가</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- 미등록 선수 안내 -->
+    <div th:if="${!#lists.isEmpty(unregisteredPlayers)}" class="alert alert-warning">
+        <strong>용품 미등록 선수:</strong>
+        <span th:each="p, i : ${unregisteredPlayers}">
+            <span th:text="${p.name}"></span><span th:if="${!i.last}">, </span>
+        </span>
+    </div>
+
+    <div class="text-center mt-3">
+        <a href="/" class="btn btn-outline-secondary">홈으로</a>
+    </div>
+</body>
+</html>
