@@ -7,22 +7,53 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.util.Comparator; 
+
 import com.mg.pingpong.entity.Player;
 import com.mg.pingpong.repository.PlayerRepository;
 import java.util.List;
 import org.springframework.ui.Model;
+
+import java.util.Map;       
+import java.util.HashMap;   
+import com.mg.pingpong.service.EloCalculationService;
+import jakarta.servlet.http.HttpSession;
 
 @Controller
 public class PlayerController {
 
     @Autowired
     private PlayerRepository playerRepository;
+    
+    @Autowired
+    private EloCalculationService eloCalculationService;
 
     @GetMapping("/players")
-    public String players(Model model) {
+    public String players(Model model, HttpSession session)  {
         List<Player> allPlayers = playerRepository.findAllByOrderByNameAsc();
 
-        // 1. 공통된 필터링 로직을 함수처럼 사용하는 방법 (가독성 UP)
+        // ✅ matches.html과 동일한 방식으로 TOP 10 계산
+        Map<String, Integer> eloMap = eloCalculationService.calculateAllElo();
+        Map<String, int[]> winLoseMap = eloCalculationService.calculateWinLose();
+
+         // ✅ TOP 10: ELO 기준 정렬 (실시간 계산된 값)
+        List<Map<String, Object>> topPlayers = allPlayers.stream()
+            .filter(p -> winLoseMap.containsKey(p.getName()))
+            .map(p -> {
+                Map<String, Object> m = new HashMap<>();
+                m.put("name", p.getName());
+                m.put("elo", eloMap.getOrDefault(p.getName(), 1500));
+                int[] wl = winLoseMap.getOrDefault(p.getName(), new int[]{0, 0});
+                m.put("win", wl[0]);
+                m.put("lose", wl[1]);
+                m.put("grade", p.getGrade());
+                return m;
+            })
+            .sorted((a, b) -> (int) b.get("elo") - (int) a.get("elo"))
+            .limit(10)
+            .toList();
+
+       // 1. 공통된 필터링 로직을 함수처럼 사용하는 방법 (가독성 UP)
         model.addAttribute("p0_3", allPlayers.stream()
                 .filter(p -> getGradeInt(p) <= 3)
                 .toList());
@@ -42,7 +73,12 @@ public class PlayerController {
                 .filter(p -> getGradeInt(p) >= 8)
                 .toList());
 
-        return "players"; // 반드시 템플릿 이름(예: players.html)을 리턴해야 합니다!
+        model.addAttribute("topPlayers", topPlayers);
+        // 관리자 여부만 전달
+        model.addAttribute("isAdmin", session.getAttribute("isAdmin") != null);
+        
+      
+        return "players";
     }
 
     // 2. 등급을 안전하게 숫자로 변환하는 헬퍼 메서드 추가
@@ -79,8 +115,8 @@ public class PlayerController {
     public String savePlayer(@RequestParam("name") String name, @RequestParam("grade") int grade) {
         Player player = new Player();
         player.setName(name);
-       
         player.setGrade(String.valueOf(grade));
+        player.setElo(1500);
         playerRepository.save(player);
         return "redirect:/players";
     }
@@ -99,9 +135,17 @@ public class PlayerController {
     // 기존 players 매핑 아래에 membership 화면용 매핑 추가
     @GetMapping("/players/membership")
     public String membership(Model model) {
-        // 90명의 전체 리스트를 이름순으로 가져옴
-        model.addAttribute("players", playerRepository.findAllByOrderByNameAsc());
-        return "membership"; // membership.html 템플릿을 호출
+        List<Player> players = playerRepository.findAllByOrderByNameAsc();
+
+        long paidCount = players.stream().filter(Player::isPaidMembership).count();
+        long unpaidCount = players.size() - paidCount;
+
+        model.addAttribute("players", players);
+        model.addAttribute("paidCount", paidCount);
+        model.addAttribute("unpaidCount", unpaidCount);
+        model.addAttribute("totalCount", players.size());
+
+        return "membership";
     }
 
 }

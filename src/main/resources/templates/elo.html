@@ -8,305 +8,300 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         body { background: #f4f5f7; font-family: 'Noto Sans KR', sans-serif; color: #1a1a2e; }
-        .page-header { background: #1a1a2e; color: #fff; padding: 3rem 0 2rem; margin-bottom: 2.5rem; }
-        .page-header h1 { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.02em; }
+        .page-header { background: #1a1a2e; color: #fff; padding: 2rem 1.25rem 1.5rem; margin-bottom: 1.5rem; }
+        .page-header h1 { font-size: clamp(1.3rem, 5vw, 1.8rem); font-weight: 700; letter-spacing: -0.02em; }
         .page-header p { color: rgba(255,255,255,0.6); font-size: 0.9rem; margin-bottom: 0; }
-        .section-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; color: #1a1a2e; }
-        .info-card { background: #fff; border-radius: 14px; padding: 1.5rem; margin-bottom: 1.25rem; border: 1px solid rgba(0,0,0,0.06); }
-        .formula-box { background: #f4f5f7; border-radius: 8px; padding: 0.75rem 1rem; font-family: 'DM Mono', monospace; font-size: 0.85rem; color: #1a1a2e; margin: 0.5rem 0; }
-        .step-circle { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #e8eaff; color: #3d5af1; font-size: 0.75rem; font-weight: 700; flex-shrink: 0; margin-right: 10px; margin-top: 2px; }
-        .step-row { display: flex; align-items: flex-start; margin-bottom: 1rem; font-size: 0.9rem; line-height: 1.6; }
-        .badge-grade { display: inline-block; font-size: 0.72rem; padding: 3px 10px; border-radius: 99px; font-weight: 500; margin: 2px; }
+        .back-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; color: rgba(255,255,255,0.7); text-decoration: none; margin-bottom: 1rem; }
+        .back-btn:hover { color: #fff; }
+        .section-title { font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem; color: #1a1a2e; }
+        .info-card { background: #fff; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid rgba(0,0,0,0.06); }
+        .formula-box { background: #f4f5f7; border-radius: 8px; padding: 0.6rem 0.85rem; font-family: 'DM Mono', monospace; font-size: 0.8rem; color: #1a1a2e; margin: 0.4rem 0; overflow-x: auto; white-space: nowrap; }
+        .step-circle { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #e8eaff; color: #3d5af1; font-size: 0.72rem; font-weight: 700; flex-shrink: 0; margin-right: 8px; margin-top: 2px; }
+        .step-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 0.75rem; font-size: 0.88rem; line-height: 1.6; }
+        .step-row > span:last-child { flex: 1; min-width: 0; word-break: keep-all; }
+        .badge-grade { display: inline-block; font-size: 0.7rem; padding: 2px 8px; border-radius: 99px; font-weight: 500; margin: 2px; }
         .badge-blue { background: #e8eaff; color: #3d5af1; }
         .badge-gray { background: #f0f0f0; color: #666; }
-
-        /* 계산기 */
-        .calc-card { background: #fff; border-radius: 14px; padding: 1.5rem; border: 1px solid rgba(0,0,0,0.06); }
-        .player-label { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.75rem; }
+        .calc-card { background: #fff; border-radius: 12px; padding: 1.25rem; border: 1px solid rgba(0,0,0,0.06); }
+        .player-label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.5rem; }
         .player-a { color: #3d5af1; }
         .player-b { color: #e05c2a; }
-        .elo-display { font-size: 2rem; font-weight: 700; letter-spacing: -0.03em; }
-        .range-row { display: flex; align-items: center; gap: 10px; margin-bottom: 0.5rem; }
-        .range-row label { font-size: 0.8rem; color: #888; min-width: 60px; }
-        .range-row input[type=range] { flex: 1; accent-color: #3d5af1; }
-        .range-row span { font-size: 0.85rem; font-weight: 500; min-width: 32px; text-align: right; }
-        .result-badge { border-radius: 10px; padding: 1rem; text-align: center; }
-        .result-badge .label { font-size: 0.75rem; color: #888; margin-bottom: 4px; }
-        .result-badge .value { font-size: 1.5rem; font-weight: 700; }
+        .elo-display { font-size: clamp(1.5rem, 5vw, 2rem); font-weight: 700; letter-spacing: -0.03em; }
+        .range-row { display: flex; align-items: center; gap: 8px; margin-bottom: 0.4rem; }
+        .range-row label { font-size: 0.78rem; color: #888; min-width: 40px; }
+        .range-row input[type=range] { flex: 1; accent-color: #3d5af1; min-width: 0; }
+        .range-row span { font-size: 0.82rem; font-weight: 500; min-width: 28px; text-align: right; }
+        .result-badge { border-radius: 10px; padding: 0.75rem 0.5rem; text-align: center; }
+        .result-badge .label { font-size: 0.7rem; color: #888; margin-bottom: 4px; }
+        .result-badge .value { font-size: clamp(1.1rem, 4vw, 1.5rem); font-weight: 700; }
         .up { color: #17a863; } .down { color: #e03131; } .neutral { color: #888; }
-        .arrow-badge { display: inline-block; font-size: 0.75rem; padding: 2px 8px; border-radius: 99px; margin-top: 4px; }
+        .arrow-badge { display: inline-block; font-size: 0.7rem; padding: 2px 6px; border-radius: 99px; margin-top: 4px; white-space: nowrap; }
         .arrow-up { background: #d3f9e5; color: #17a863; }
         .arrow-down { background: #ffe3e3; color: #e03131; }
-
-        /* 차트 */
-        #eloChart { max-height: 220px; }
-
-        .back-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; color: rgba(255,255,255,0.7); text-decoration: none; margin-bottom: 1.5rem; }
-        .back-btn:hover { color: #fff; }
-        select.form-select { font-size: 0.85rem; }
+        .chart-wrap { position: relative; height: 180px; margin-top: 0.75rem; }
+        @media (max-width: 576px) {
+            .page-header { padding: 1.5rem 1rem 1rem; }
+            .info-card, .calc-card { padding: 1rem; }
+            .range-row label { min-width: 32px; font-size: 0.72rem; }
+        }
     </style>
 </head>
-<body>
+    <body>
 
-<div class="page-header">
-    <div class="container">
-        <a href="/" class="back-btn">← 홈으로</a>
-        <h1>ELO 레이팅 시스템</h1>
-        <p>한수부탁 탁구 리그의 실력 측정 방식</p>
+    <div class="page-header">
+        <div class="container-fluid px-3">
+            <a href="/" class="back-btn">← 홈으로</a>
+            <h1>ELO 레이팅 시스템</h1>
+            <p>한수부탁 탁구 리그의 실력 측정 방식</p>
+        </div>
     </div>
-</div>
 
-<div class="container pb-5">
-    <div class="row g-4">
+    <div class="container-fluid px-3 pb-5">
+        <div class="row g-3">
 
-        <!-- 왼쪽: 설명 -->
-        <div class="col-lg-5">
+            <!-- 설명 -->
+            <div class="col-12 col-lg-5">
+                <div class="section-title">ELO란 무엇인가?</div>
+                <div class="info-card">
+                    <div class="step-row">
+                        <span class="step-circle">1</span>
+                        <span>두 선수의 ELO로 <strong>기대 승률</strong>을 계산합니다.</span>
+                    </div>
+                    <div class="step-row">
+                        <span class="step-circle">2</span>
+                        <span>실제 결과와 기대 승률의 <strong>차이</strong>만큼 점수가 오르내립니다.</span>
+                    </div>
+                    <div class="step-row">
+                        <span class="step-circle">3</span>
+                        <span><strong>이변일수록 보상이 큽니다.</strong> 강자를 이기면 많이 오르고, 약자를 이기면 조금만 오릅니다.</span>
+                    </div>
+                </div>
 
-            <div class="section-title">ELO란 무엇인가?</div>
-            <div class="info-card">
-                <div class="step-row"><span class="step-circle">1</span>두 선수의 ELO로 <strong>기대 승률</strong>을 계산합니다.</div>
-                <div class="step-row"><span class="step-circle">2</span>실제 결과와 기대 승률의 <strong>차이</strong>만큼 점수가 오르내립니다.</div>
-                <div class="step-row"><span class="step-circle">3</span><strong>이변일수록 보상이 큽니다.</strong> 강자를 이기면 많이 오르고, 약자를 이기면 조금만 오릅니다.</div>
-            </div>
+                <div class="section-title">수식</div>
+                <div class="info-card">
+                    <div class="text-muted small mb-1">기대 승률</div>
+                    <div class="formula-box">E₁ = 1 / (1 + 10^((ELO₂ - ELO₁) / 400))</div>
+                    <div class="text-muted small mb-1 mt-2">ELO 변화량</div>
+                    <div class="formula-box">ΔElo = K × (실제결과 - E₁)</div>
+                    <div class="text-muted small mb-1 mt-2">세트 차 보정 (margin)</div>
+                    <div class="formula-box">3:0 → ×1.5 | 3:1 → ×1.2 | 3:2 → ×1.0</div>
+                    <div class="text-muted small mb-1 mt-2">부수 보정</div>
+                    <div class="formula-box">실제레이팅 = ELO + 부수점수 × 0.5</div>
+                    <div class="mt-2">
+                        <span class="badge-grade badge-blue">1부 +1000</span>
+                        <span class="badge-grade badge-blue">2부 +900</span>
+                        <span class="badge-grade badge-blue">3부 +800</span>
+                        <span class="badge-grade badge-blue">4부 +700</span>
+                        <span class="badge-grade badge-blue">5부 +600</span>
+                        <span class="badge-grade badge-blue">6부 +500</span>
+                        <span class="badge-grade badge-blue">7부 +400</span>
+                        <span class="badge-grade badge-blue">8부 +300</span>
+                        <span class="badge-grade badge-gray">K = 32(최대 변동 값)</span>
+                        <span class="badge-grade badge-gray">최소 ±2</span>
+                    </div>
+                </div>
 
-            <div class="section-title mt-3">수식</div>
-            <div class="info-card">
-                <div class="text-muted small mb-1">기대 승률</div>
-                <div class="formula-box">E₁ = 1 / (1 + 10^((ELO₂ - ELO₁) / 400))</div>
-
-                <div class="text-muted small mb-1 mt-3">ELO 변화량</div>
-                <div class="formula-box">ΔElo = K × (실제결과 - E₁)</div>
-
-                <div class="text-muted small mb-1 mt-3">점수 차 보정 (margin)</div>
-                <div class="formula-box">1점차 → ×1.0 &nbsp;|&nbsp; 2점차 → ×1.2 &nbsp;|&nbsp; 3점+ → ×1.5</div>
-
-                <div class="text-muted small mb-1 mt-3">부수 보정</div>
-                <div class="formula-box">실제레이팅 = ELO + 부수점수 × 0.5</div>
-
-                <div class="mt-2">
-                    <span class="badge-grade badge-blue">1부 +1000</span>
-                    <span class="badge-grade badge-blue">2부 +900</span>
-                    <span class="badge-grade badge-blue">3부 +800</span>
-                    <span class="badge-grade badge-blue">4부 +700</span>
-                    <span class="badge-grade badge-gray">K = 32 고정</span>
-                    <span class="badge-grade badge-gray">최소 변동 ±2</span>
+                <div class="section-title">예시</div>
+                <div class="info-card">
+                    <p class="small text-muted mb-2">A(1500) vs B(1500), A가 3:1로 승리 시</p>
+                    <div class="formula-box">E_A = 0.50 (50%)</div>
+                    <div class="formula-box">margin = 1.2 (3:1, 2세트 차)</div>
+                    <div class="formula-box">ΔA = 32 × (1.2 - 0.50) = +22</div>
+                    <div class="formula-box">ΔB = 32 × (0.0 - 0.50) = -16</div>
+                    <p class="small text-muted mt-2 mb-0">→ A: 1500 → <strong>1522</strong> | B: 1500 → <strong>1484</strong></p>
                 </div>
             </div>
 
-            <div class="section-title mt-3">예시로 이해하기</div>
-            <div class="info-card">
-                <p class="small text-muted mb-2">A(1500) vs B(1500), A가 3:1로 승리 시</p>
-                <div class="formula-box">E_A = 1 / (1 + 10^0) = 0.50 (50%)</div>
-                <div class="formula-box">margin = 1.2 (3:1, 2세트 차)</div>
-                <div class="formula-box">ΔA = 32 × (1.2 - 0.50) = +22</div>
-                <div class="formula-box">ΔB = 32 × (0.0 - 0.50) = -16</div>
-                <p class="small text-muted mt-2 mb-0">→ A: 1500 → <strong>1522</strong> &nbsp;|&nbsp; B: 1500 → <strong>1484</strong></p>
-            </div>
-        </div>
-
-        <!-- 오른쪽: 계산기 -->
-        <div class="col-lg-7">
-            <div class="section-title">ELO 변화량 계산기</div>
-            <div class="calc-card">
-
-                <div class="row g-3 mb-3">
-                    <div class="col-6">
-                        <div class="player-label player-a">선수 A</div>
-                        <div class="elo-display player-a" id="disp-elo1">1500</div>
-                        <div class="range-row mt-2">
-                            <label>ELO</label>
-                            <input type="range" id="elo1" min="800" max="2500" value="1500" step="10">
-                            <span id="elo1-out">1500</span>
+            <!-- 계산기 -->
+            <div class="col-12 col-lg-7">
+                <div class="section-title">ELO 변화량 계산기</div>
+                <div class="calc-card">
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <div class="player-label player-a">선수 A</div>
+                            <div class="elo-display player-a" id="disp-elo1">1500</div>
+                            <div class="range-row mt-2">
+                                <label>ELO</label>
+                                <input type="range" id="elo1" min="800" max="2500" value="1500" step="10">
+                                <span id="elo1-out">1500</span>
+                            </div>
+                            <div class="range-row">
+                                <label>부수</label>
+                                <select id="grade1" class="form-select form-select-sm">
+                                    <option value="500">없음</option>
+                                    <option value="2000">1부</option><option value="1800">2부</option>
+                                    <option value="1600">3부</option><option value="1400">4부</option>
+                                    <option value="1200">5부</option><option value="1000">6부</option>
+                                    <option value="800">7부</option><option value="600">8부</option>
+                                </select>
+                            </div>
+                            <div class="range-row">
+                                <label>세트</label>
+                                <input type="range" id="score1" min="0" max="3" value="3" step="1">
+                                <span id="score1-out">3</span>
+                            </div>
                         </div>
-                        <div class="range-row">
-                            <label>부수</label>
-                            <select id="grade1" class="form-select form-select-sm">
-                                <option value="500">없음</option>
-                                <option value="2000">1부</option><option value="1800">2부</option>
-                                <option value="1600">3부</option><option value="1400">4부</option>
-                                <option value="1200">5부</option><option value="1000">6부</option>
-                                <option value="800">7부</option><option value="600">8부</option>
-                            </select>
-                        </div>
-                        <div class="range-row">
-                            <label>세트</label>
-                              <input type="range" id="score1" min="0" max="3" value="3" step="1">
-                              <span id="score1-out">3</span>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="player-label player-b">선수 B</div>
-                        <div class="elo-display player-b" id="disp-elo2">1500</div>
-                        <div class="range-row mt-2">
-                            <label>ELO</label>
-                            <input type="range" id="elo2" min="800" max="2500" value="1500" step="10">
-                            <span id="elo2-out">1500</span>
-                        </div>
-                        <div class="range-row">
-                            <label>부수</label>
-                            <select id="grade2" class="form-select form-select-sm">
-                                <option value="500">없음</option>
-                                <option value="2000">1부</option><option value="1800">2부</option>
-                                <option value="1600">3부</option><option value="1400">4부</option>
-                                <option value="1200">5부</option><option value="1000">6부</option>
-                                <option value="800">7부</option><option value="600">8부</option>
-                            </select>
-                        </div>
-                        <div class="range-row">
-                            <label>세트</label>
+                        <div class="col-6">
+                            <div class="player-label player-b">선수 B</div>
+                            <div class="elo-display player-b" id="disp-elo2">1500</div>
+                            <div class="range-row mt-2">
+                                <label>ELO</label>
+                                <input type="range" id="elo2" min="800" max="2500" value="1500" step="10">
+                                <span id="elo2-out">1500</span>
+                            </div>
+                            <div class="range-row">
+                                <label>부수</label>
+                                <select id="grade2" class="form-select form-select-sm">
+                                    <option value="500">없음</option>
+                                    <option value="2000">1부</option><option value="1800">2부</option>
+                                    <option value="1600">3부</option><option value="1400">4부</option>
+                                    <option value="1200">5부</option><option value="1000">6부</option>
+                                    <option value="800">7부</option><option value="600">8부</option>
+                                </select>
+                            </div>
+                            <div class="range-row">
+                                <label>세트</label>
                                 <input type="range" id="score2" min="0" max="3" value="1" step="1">
                                 <span id="score2-out">1</span>
+                            </div>
                         </div>
+                    </div>
+
+                    <hr style="border-color:rgba(0,0,0,0.06); margin:0.75rem 0;">
+
+                    <div class="row g-2 mb-2">
+                        <div class="col-4">
+                            <div class="result-badge" style="background:#f0f2ff;">
+                                <div class="label">A 기대승률</div>
+                                <div class="value" id="exp1" style="color:#3d5af1;">50%</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="result-badge" style="background:#f4f5f7;">
+                                <div class="label">margin</div>
+                                <div class="value neutral" id="margin-val">×1.5</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="result-badge" style="background:#fff5f0;">
+                                <div class="label">B 기대승률</div>
+                                <div class="value" id="exp2" style="color:#e05c2a;">50%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <div class="result-badge" style="background:#f4f5f7; border-radius:10px;">
+                                <div class="label">선수 A 변화</div>
+                                <div class="value" id="delta1">+22</div>
+                                <div><span class="arrow-badge arrow-up" id="after1">1500 → 1522</span></div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="result-badge" style="background:#f4f5f7; border-radius:10px;">
+                                <div class="label">선수 B 변화</div>
+                                <div class="value" id="delta2">-16</div>
+                                <div><span class="arrow-badge arrow-down" id="after2">1500 → 1484</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chart-wrap">
+                        <canvas id="eloChart" role="img" aria-label="ELO 변화 전후 비교"></canvas>
                     </div>
                 </div>
-
-                <hr style="border-color: rgba(0,0,0,0.06);">
-
-                <div class="row g-2 mb-3">
-                    <div class="col-4">
-                        <div class="result-badge" style="background:#f0f2ff;">
-                            <div class="label">A 기대 승률</div>
-                            <div class="value" id="exp1" style="color:#3d5af1;">50%</div>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="result-badge" style="background:#f4f5f7;">
-                            <div class="label">margin 보정</div>
-                            <div class="value neutral" id="margin-val">×1.5</div>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="result-badge" style="background:#fff5f0;">
-                            <div class="label">B 기대 승률</div>
-                            <div class="value" id="exp2" style="color:#e05c2a;">50%</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row g-2 mb-3">
-                    <div class="col-6">
-                        <div class="result-badge" style="background:#f4f5f7; border-radius:12px; padding:1.25rem;">
-                            <div class="label">선수 A 변화</div>
-                            <div class="value" id="delta1">+22</div>
-                            <div><span class="arrow-badge arrow-up" id="after1">1500 → 1522</span></div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="result-badge" style="background:#f4f5f7; border-radius:12px; padding:1.25rem;">
-                            <div class="label">선수 B 변화</div>
-                            <div class="value" id="delta2">-16</div>
-                            <div><span class="arrow-badge arrow-down" id="after2">1500 → 1484</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <canvas id="eloChart" role="img" aria-label="ELO 변화 전후 비교 막대 차트">선수 A와 B의 ELO 변화 비교</canvas>
             </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="/" class="btn btn-outline-secondary">홈으로 돌아가기</a>
         </div>
     </div>
 
-    <div class="text-center mt-4">
-        <a href="/" class="btn btn-outline-secondary">홈으로 돌아가기</a>
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<script>
-const K = 32;
-
-function calcMargin(s1, s2) {
-    const d = s1 - s2;
-    if (d >= 3) return 1.5;
-    if (d === 2) return 1.2;
-    return 1.0;
-}
-
-let chart;
-
-function calc() {
-    const elo1 = parseInt(document.getElementById('elo1').value);
-    const elo2 = parseInt(document.getElementById('elo2').value);
-    const g1 = parseInt(document.getElementById('grade1').value);
-    const g2 = parseInt(document.getElementById('grade2').value);
-    const s1 = parseInt(document.getElementById('score1').value);
-    const s2 = parseInt(document.getElementById('score2').value);
-
-    document.getElementById('elo1-out').textContent = elo1;
-    document.getElementById('elo2-out').textContent = elo2;
-    document.getElementById('score1-out').textContent = s1;
-    document.getElementById('score2-out').textContent = s2;
-    document.getElementById('disp-elo1').textContent = elo1;
-    document.getElementById('disp-elo2').textContent = elo2;
-
-    const r1 = elo1 + g1 * 0.5;
-    const r2 = elo2 + g2 * 0.5;
-    const e1 = 1 / (1 + Math.pow(10, (r2 - r1) / 400));
-    const e2 = 1 - e1;
-
-    document.getElementById('exp1').textContent = Math.round(e1 * 100) + '%';
-    document.getElementById('exp2').textContent = Math.round(e2 * 100) + '%';
-
-    let actual1, actual2, margin;
-    if (s1 > s2)      { margin = calcMargin(s1, s2); actual1 = margin; actual2 = 0; }
-    else if (s2 > s1) { margin = calcMargin(s2, s1); actual1 = 0; actual2 = margin; }
-    else              { margin = 1.0; actual1 = 0.5; actual2 = 0.5; }
-
-    document.getElementById('margin-val').textContent = '×' + margin.toFixed(1);
-
-    let d1 = Math.round(K * (actual1 - e1));
-    let d2 = Math.round(K * (actual2 - e2));
-    if (s1 > s2)      { d1 = Math.max(2, d1); d2 = Math.min(-2, d2); }
-    else if (s2 > s1) { d2 = Math.max(2, d2); d1 = Math.min(-2, d1); }
-
-    const el1 = document.getElementById('delta1');
-    const el2 = document.getElementById('delta2');
-    el1.textContent = (d1 >= 0 ? '+' : '') + d1;
-    el2.textContent = (d2 >= 0 ? '+' : '') + d2;
-    el1.className = 'value ' + (d1 >= 0 ? 'up' : 'down');
-    el2.className = 'value ' + (d2 >= 0 ? 'up' : 'down');
-
-    const a1 = document.getElementById('after1');
-    const a2 = document.getElementById('after2');
-    a1.textContent = elo1 + ' → ' + (elo1 + d1);
-    a2.textContent = elo2 + ' → ' + (elo2 + d2);
-    a1.className = 'arrow-badge ' + (d1 >= 0 ? 'arrow-up' : 'arrow-down');
-    a2.className = 'arrow-badge ' + (d2 >= 0 ? 'arrow-up' : 'arrow-down');
-
-    const colA = d1 >= 0 ? '#17a863' : '#e03131';
-    const colB = d2 >= 0 ? '#17a863' : '#e03131';
-
-    if (chart) {
-        chart.data.datasets[0].data = [elo1, elo2];
-        chart.data.datasets[1].data = [elo1 + d1, elo2 + d2];
-        chart.data.datasets[1].backgroundColor = [colA, colB];
-        chart.update();
-    } else {
-        chart = new Chart(document.getElementById('eloChart'), {
-            type: 'bar',
-            data: {
-                labels: ['선수 A', '선수 B'],
-                datasets: [
-                    { label: '경기 전', data: [elo1, elo2], backgroundColor: '#c8cad4' },
-                    { label: '경기 후', data: [elo1 + d1, elo2 + d2], backgroundColor: [colA, colB] }
-                ]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: false, ticks: { color: '#888' }, grid: { color: 'rgba(0,0,0,0.05)' } },
-                    x: { ticks: { color: '#888' }, grid: { display: false } }
-                }
-            }
-        });
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+    <script>
+    const K = 32;
+    function calcMargin(s1, s2) {
+        const d = s1 - s2;
+        if (d >= 3) return 1.5;
+        if (d === 2) return 1.2;
+        return 1.0;
     }
-}
-
-['elo1','elo2','score1','score2','grade1','grade2'].forEach(id => {
-    document.getElementById(id).addEventListener('input', calc);
-});
-calc();
-</script>
-</body>
+    let chart;
+    function calc() {
+        const elo1 = parseInt(document.getElementById('elo1').value);
+        const elo2 = parseInt(document.getElementById('elo2').value);
+        const g1 = parseInt(document.getElementById('grade1').value);
+        const g2 = parseInt(document.getElementById('grade2').value);
+        const s1 = parseInt(document.getElementById('score1').value);
+        const s2 = parseInt(document.getElementById('score2').value);
+        document.getElementById('elo1-out').textContent = elo1;
+        document.getElementById('elo2-out').textContent = elo2;
+        document.getElementById('score1-out').textContent = s1;
+        document.getElementById('score2-out').textContent = s2;
+        document.getElementById('disp-elo1').textContent = elo1;
+        document.getElementById('disp-elo2').textContent = elo2;
+        const r1 = elo1 + g1 * 0.5;
+        const r2 = elo2 + g2 * 0.5;
+        const e1 = 1 / (1 + Math.pow(10, (r2 - r1) / 400));
+        const e2 = 1 - e1;
+        document.getElementById('exp1').textContent = Math.round(e1 * 100) + '%';
+        document.getElementById('exp2').textContent = Math.round(e2 * 100) + '%';
+        let actual1, actual2, margin;
+        if (s1 > s2)      { margin = calcMargin(s1, s2); actual1 = margin; actual2 = 0; }
+        else if (s2 > s1) { margin = calcMargin(s2, s1); actual1 = 0; actual2 = margin; }
+        else              { margin = 1.0; actual1 = 0.5; actual2 = 0.5; }
+        document.getElementById('margin-val').textContent = 'x' + margin.toFixed(1);
+        let d1 = Math.round(K * (actual1 - e1));
+        let d2 = Math.round(K * (actual2 - e2));
+        if (s1 > s2)      { d1 = Math.max(2, d1); d2 = Math.min(-2, d2); }
+        else if (s2 > s1) { d2 = Math.max(2, d2); d1 = Math.min(-2, d1); }
+        const el1 = document.getElementById('delta1');
+        const el2 = document.getElementById('delta2');
+        el1.textContent = (d1 >= 0 ? '+' : '') + d1;
+        el2.textContent = (d2 >= 0 ? '+' : '') + d2;
+        el1.className = 'value ' + (d1 >= 0 ? 'up' : 'down');
+        el2.className = 'value ' + (d2 >= 0 ? 'up' : 'down');
+        const a1 = document.getElementById('after1');
+        const a2 = document.getElementById('after2');
+        a1.textContent = elo1 + ' -> ' + (elo1 + d1);
+        a2.textContent = elo2 + ' -> ' + (elo2 + d2);
+        a1.className = 'arrow-badge ' + (d1 >= 0 ? 'arrow-up' : 'arrow-down');
+        a2.className = 'arrow-badge ' + (d2 >= 0 ? 'arrow-up' : 'arrow-down');
+        const colA = d1 >= 0 ? '#17a863' : '#e03131';
+        const colB = d2 >= 0 ? '#17a863' : '#e03131';
+        if (chart) {
+            chart.data.datasets[0].data = [elo1, elo2];
+            chart.data.datasets[1].data = [elo1 + d1, elo2 + d2];
+            chart.data.datasets[1].backgroundColor = [colA, colB];
+            chart.update();
+        } else {
+            chart = new Chart(document.getElementById('eloChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['선수 A', '선수 B'],
+                    datasets: [
+                        { label: '경기 전', data: [elo1, elo2], backgroundColor: '#c8cad4' },
+                        { label: '경기 후', data: [elo1 + d1, elo2 + d2], backgroundColor: [colA, colB] }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: false, ticks: { color: '#888', font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+                        x: { ticks: { color: '#888', font: { size: 11 } }, grid: { display: false } }
+                    }
+                }
+            });
+        }
+    }
+    ['elo1','elo2','score1','score2','grade1','grade2'].forEach(id => {
+        document.getElementById(id).addEventListener('input', calc);
+    });
+    calc();
+    </script>
+    </body>
 </html>

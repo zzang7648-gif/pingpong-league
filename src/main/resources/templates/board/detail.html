@@ -1,30 +1,488 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8"><title>상세보기</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>상세보기</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+
+        .detail-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .post-header {
+            padding: 2rem;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .post-header h2 {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 1rem;
+            word-break: break-word;
+            font-size: 1.75rem;
+        }
+
+        .post-meta {
+            display: flex;
+            gap: 1.5rem;
+            color: #6c757d;
+            font-size: 0.95rem;
+            flex-wrap: wrap;
+        }
+
+        .post-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .post-meta-icon {
+            font-size: 1.1rem;
+        }
+
+        .post-content {
+            padding: 2rem;
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            line-height: 1.8;
+            min-height: 200px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .comments-section {
+            padding: 2rem;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .comments-section h4 {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .comment-list {
+            margin-bottom: 1.5rem;
+        }
+
+        .comment-item {
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-left: 4px solid #0d6efd;
+            border-radius: 6px;
+            margin-bottom: 0.75rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .comment-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .comment-author {
+            font-weight: 600;
+            color: #0d6efd;
+            margin-bottom: 0.5rem;
+        }
+
+        .comment-content {
+            color: #333;
+            word-break: break-word;
+            white-space: pre-wrap;
+        }
+
+        .empty-comments {
+            text-align: center;
+            padding: 2rem;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .comment-form-section {
+            padding: 2rem;
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .comment-form-section h5 {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .comment-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .form-control {
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            padding: 0.75rem;
+        }
+
+        .form-control:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+
+        .btn-submit-comment {
+            background-color: #0d6efd;
+            color: white;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-submit-comment:hover {
+            background-color: #0b5ed7;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-submit-comment:active {
+            transform: translateY(0);
+        }
+
+        .footer-section {
+            padding: 2rem;
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .btn-custom {
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .btn-list {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-list:hover {
+            background-color: #5c636a;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-edit {
+            background-color: #0d6efd;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background-color: #0b5ed7;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-delete {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background-color: #bb2d3b;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* 반응형 설정 */
+        @media (max-width: 576px) {
+            .detail-container {
+                border-radius: 0;
+                box-shadow: none;
+            }
+
+            .post-header {
+                padding: 1.5rem 1rem;
+            }
+
+            .post-header h2 {
+                font-size: 1.3rem;
+                margin-bottom: 1rem;
+            }
+
+            .post-meta {
+                gap: 1rem;
+                font-size: 0.85rem;
+            }
+
+            .post-content {
+                padding: 1.5rem 1rem;
+                min-height: 150px;
+            }
+
+            .comments-section {
+                padding: 1.5rem 1rem;
+            }
+
+            .comments-section h4 {
+                font-size: 1.1rem;
+            }
+
+            .comment-form-section {
+                padding: 1.5rem 1rem;
+            }
+
+            .comment-form-section h5 {
+                font-size: 1rem;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+
+            .footer-section {
+                padding: 1.5rem 1rem;
+                flex-direction: column;
+            }
+
+            .btn-custom {
+                width: 100%;
+                text-align: center;
+                padding: 0.75rem;
+            }
+
+            .btn-submit-comment {
+                width: 100%;
+            }
+        }
+
+        @media (min-width: 577px) and (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr 1fr;
+                gap: 0.5rem;
+            }
+
+            .post-header h2 {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .form-row {
+                grid-template-columns: 1.5fr 1.5fr 2fr 1fr;
+            }
+        }
+
+        /* 다크모드 대응 */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #1e1e1e;
+            }
+
+            .detail-container {
+                background-color: #2d2d2d;
+                color: #e0e0e0;
+            }
+
+            .post-header {
+                border-bottom-color: #555;
+            }
+
+            .post-header h2 {
+                color: #e0e0e0;
+            }
+
+            .post-meta {
+                color: #a0a0a0;
+            }
+
+            .post-content {
+                background-color: #3d3d3d;
+                color: #e0e0e0;
+                border-bottom-color: #555;
+            }
+
+            .comments-section {
+                border-bottom-color: #555;
+            }
+
+            .comment-item {
+                background-color: #3d3d3d;
+                border-left-color: #0d6efd;
+            }
+
+            .comment-author {
+                color: #79b8ff;
+            }
+
+            .comment-content {
+                color: #e0e0e0;
+            }
+
+            .empty-comments {
+                color: #a0a0a0;
+            }
+
+            .comment-form-section {
+                background-color: #3d3d3d;
+                border-bottom-color: #555;
+            }
+
+            .form-control {
+                background-color: #2d2d2d;
+                color: #e0e0e0;
+                border-color: #555;
+            }
+
+            .form-control:focus {
+                background-color: #2d2d2d;
+                color: #e0e0e0;
+            }
+        }
+    </style>
 </head>
-<div th:replace="~{layout/header :: header}"></div>
-<body class="container mt-4">
-    <h2 th:text="${post.title}">제목</h2>
-    <hr><p>작성자: <span th:text="${post.nickname}"></span> | 작성일: <span th:text="${#temporals.format(post.createdDate, 'yyyy-MM-dd HH:mm')}"></span></p>
-    <div class="p-3 border bg-light" th:text="${post.content}"></div>
-    <hr>
-    <h4>댓글</h4>
-    <ul class="list-group mb-3">
-        <li class="list-group-item" th:each="comment : ${comments}">
-            <strong th:text="${comment.nickname}"></strong>: <span th:text="${comment.content}"></span>
-        </li>
-    </ul>
-    <form action="/board/comment/write" method="post" class="card p-3">
-        <input type="hidden" name="postId" th:value="${post.id}">
-        <div class="row g-2">
-            <div class="col-md-2"><input type="text" name="nickname" class="form-control" placeholder="닉네임" required></div>
-            <div class="col-md-2"><input type="password" name="password" class="form-control" placeholder="비번" required></div>
-            <div class="col-md-6"><input type="text" name="content" class="form-control" placeholder="댓글" required></div>
-            <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">등록</button></div>
+    <body>
+        <div th:replace="~{layout/header :: header}"></div>
+
+        <div class="container-fluid mt-4 mb-4">
+            <div class="detail-container">
+                <!-- 게시물 헤더 -->
+                <div class="post-header">
+                    <h2 th:text="${post.title}">게시물 제목</h2>
+                    <div class="post-meta">
+                        <div class="post-meta-item">
+                            <span class="post-meta-icon">✏️</span>
+                            <span>작성자: <strong th:text="${post.nickname}"></strong></span>
+                        </div>
+                        <div class="post-meta-item">
+                            <span class="post-meta-icon">📅</span>
+                            <span th:text="${#temporals.format(post.createdDate, 'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 게시물 내용 -->
+                <div class="post-content" th:text="${post.content}">게시물 내용이 표시됩니다.</div>
+
+                <!-- 댓글 섹션 -->
+                <div class="comments-section">
+                    <h4>💬 댓글 (<span th:text="${comments != null ? comments.size() : 0}"></span>)</h4>
+
+                    <!-- 댓글 목록 -->
+                    <div class="comment-list" th:if="${comments != null && comments.size() > 0}">
+                        <div class="comment-item" th:each="comment : ${comments}">
+                            <div class="comment-author">
+                                <span th:text="${comment.nickname}">닉네임</span>
+                            </div>
+                            <div class="comment-content" th:text="${comment.content}">댓글 내용</div>
+                        </div>
+                    </div>
+
+                    <!-- 댓글 없음 메시지 -->
+                    <div class="empty-comments" th:if="${comments == null || comments.size() == 0}">
+                        아직 댓글이 없습니다. 첫 댓글을 남겨보세요!
+                    </div>
+                </div>
+
+                <!-- 댓글 작성 폼 -->
+                <div class="comment-form-section">
+                    <h5>✍️ 댓글 작성</h5>
+                    <form action="/board/comment/write" method="post" class="comment-form" novalidate>
+                        <input type="hidden" name="postId" th:value="${post.id}">
+
+                        <div class="form-row">
+                            <input 
+                                type="text" 
+                                name="nickname" 
+                                class="form-control" 
+                                placeholder="닉네임"
+                                maxlength="20"
+                                required>
+                            <input 
+                                type="password" 
+                                name="password" 
+                                class="form-control" 
+                                placeholder="비밀번호"
+                                minlength="4"
+                                maxlength="20"
+                                required>
+                            <input 
+                                type="text" 
+                                name="content" 
+                                class="form-control" 
+                                placeholder="댓글을 입력하세요"
+                                maxlength="500"
+                                required>
+                            <button type="submit" class="btn-submit-comment">등록</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 하단 버튼 -->
+                <div class="footer-section">
+                    <a href="/board" class="btn btn-custom btn-list">← 목록으로</a>
+                    <button class="btn btn-custom btn-edit" onclick="alert('수정 기능은 준비 중입니다.')">✏️ 수정</button>
+                    <button class="btn btn-custom btn-delete" onclick="if(confirm('정말 삭제하시겠습니까?')) alert('삭제 기능은 준비 중입니다.')">🗑️ 삭제</button>
+                </div>
+            </div>
         </div>
-    </form>
-    <div class="mt-3"><a href="/board" class="btn btn-secondary">목록</a></div>
-</body>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+            // 댓글 폼 유효성 검증
+            document.querySelector('.comment-form').addEventListener('submit', function(e) {
+                const nickname = document.querySelector('input[name="nickname"]').value.trim();
+                const password = document.querySelector('input[name="password"]').value.trim();
+                const content = document.querySelector('input[name="content"]').value.trim();
+
+                if (!nickname) {
+                    alert('닉네임을 입력해주세요.');
+                    e.preventDefault();
+                    return;
+                }
+
+                if (password.length < 4) {
+                    alert('비밀번호는 최소 4자 이상이어야 합니다.');
+                    e.preventDefault();
+                    return;
+                }
+
+                if (!content) {
+                    alert('댓글 내용을 입력해주세요.');
+                    e.preventDefault();
+                    return;
+                }
+            });
+        </script>
+    </body>
 </html>

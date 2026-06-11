@@ -2,136 +2,214 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>오늘의 리그</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .table {
+                font-size: 0.85rem;
+            }
+            
+            .table th, .table td {
+                padding: 0.5rem 0.25rem !important;
+            }
+
+            .form-control {
+                font-size: 0.9rem;
+            }
+
+            .btn {
+                font-size: 0.9rem;
+                padding: 0.5rem 1rem;
+            }
+
+            .card {
+                padding: 1rem !important;
+            }
+
+            /* 스코어 셀렉트 박스 모바일 최적화 */
+            select[name*="s1_"] {
+                width: 45px;
+                padding: 3px;
+                font-size: 0.85rem;
+            }
+        }
+
+        @media (min-width: 769px) {
+            body {
+                padding: 20px;
+            }
+        }
+
+        /* 테이블 반응형 처리 */
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .league-table {
+            min-width: 600px;
+        }
+
+        .badge {
+            display: inline-block;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        .badge .remove-btn {
+            cursor: pointer;
+            margin-left: 0.5rem;
+            font-weight: bold;
+        }
+    </style>
 </head>
-<body class="container mt-4">
+<body>
     <div th:replace="~{layout/header :: header}"></div>
 
-    <div class="row mb-5">
-        <div class="col-12">
-            <h3>1. TOP 10 (기본 ELO 1500)</h3>
-            <table class="table table-bordered">
-                <thead><tr><th>이름</th><th>승</th><th>패</th><th>ELO</th></tr></thead>
-                <tbody>
-                    <tr th:each="player : ${topPlayers}">
-                        <td th:text="${player['name']}"></td>
-                        <td th:text="${player['win']}"></td>
-                        <td th:text="${player['lose']}"></td>
-                        <td th:text="${player['elo']}"></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="row mb-5">
-        <div class="col-12">
-            <div class="card p-4 shadow-sm border-success">
-                <h3 class="text-success mb-3">2. 오늘 리그 참가 선수 선택</h3>
-                <form action="/matches/generate" method="post" id="leagueForm">
-                    <div class="mb-3">
-                        <label for="leagueDate" class="form-label fw-bold">리그 날짜</label>
-                        <input type="date" id="leagueDate" name="matchDate" class="form-control" required onchange="location.href='/matches?date=' + this.value">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">참가 선수 검색</label>
-                        <input type="text" id="playerSearch" class="form-control" 
-                               placeholder="이름 입력 후 엔터" 
-                               onkeyup="filterPlayers()" 
-                               onkeydown="if(event.key === 'Enter') { event.preventDefault(); handleEnterKey(); }">
-                        <div id="playerDropdown" class="list-group mt-2" style="max-height: 150px; overflow-y: auto; display: none;">
-                            <button type="button" class="list-group-item list-group-item-action" 
-                                    th:each="player : ${players}" 
-                                    th:data-name="${player.name}"
-                                    onclick="addPlayer(this.getAttribute('data-name'))"
-                                    th:text="${player.name}"></button>
-                        </div>
-                    </div>
-                    <div id="selectedPlayersContainer" class="mb-3 p-2 border rounded" style="min-height: 50px;"></div>
-                    <button type="submit" class="btn btn-success px-4">선택한 선수로 리그 대진 자동 생성</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-     <!--3번 -->
-    <div class="row" th:if="${playerGroups != null}">
-        <div class="col-12" th:each="group, groupStat : ${playerGroups}">
-            <h3 class="mt-4 text-primary">
-                [[${playerGroups.size() > 1 ? (groupStat.index + 1) + '조' : '리그'}]]
-                (총 [[${group.size()}]]명)
-            </h3>
-            <form action="/matches/save-matrix" method="post">
-                <div style="overflow-x: auto;">
-                    <table class="table table-bordered text-center align-middle" style="table-layout: fixed; min-width: 400px;">
-                        <thead class="table-dark">
-                            <tr>
-                                <th style="width: 80px;">선수</th>
-                                <th th:each="p : ${group}" th:text="${p.name}" style="width: 75px;"></th>
-                            </tr>
-                        </thead>
+    <div class="container-fluid mt-4">
+        <!-- TOP 10 -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <h3>1. TOP 10 (기본 ELO 1500)</h3>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead><tr><th>이름</th><th>승</th><th>패</th><th>ELO</th></tr></thead>
                         <tbody>
-                            <tr th:each="p1 : ${group}">
-                                <th class="table-light" th:text="${p1.name}"></th>
-                                <td th:each="p2 : ${group}" style="height: 55px; vertical-align: middle;">
-
-                                    <span th:if="${p1.name == p2.name}">-</span>
-
-                                    <th:block th:if="${p1.name != p2.name}">
-                                        <th:block th:with="match=${matchMap[p1.name + '_' + p2.name]}">
-                                            <div th:if="${match != null}">
-
-                                               <!-- p1이 player1: 입력 칸 -->
-                                                <th:block th:if="${match.player1 == p1.name}">
-                                                    <th:block th:if="${match.finished}">
-                                                        <strong th:class="${match.score1 > match.score2} ? 'text-success' : 'text-danger'"
-                                                                th:text="${match.score1}"></strong>
-                                                    </th:block>
-                                                    <th:block th:if="${!match.finished}">
-                                                        <select th:name="'s1_' + ${match.id}"
-                                                                th:id="'s1_' + ${match.id}"
-                                                                onchange="autoFill(this)"
-                                                                style="width:50px; display:block; margin:auto; border:1px solid #ccc; border-radius:6px; text-align:center; font-weight:bold; font-size:1rem; padding:4px 0; cursor:pointer; appearance:none; -webkit-appearance:none; background:#fff;">
-                                                            <option value="">-</option>
-                                                            <option value="3">3</option>
-                                                            <option value="2">2</option>
-                                                            <option value="1">1</option>
-                                                            <option value="0">0</option>
-                                                        </select>
-                                                        <input type="hidden" th:name="'s2_' + ${match.id}" th:id="'s2_' + ${match.id}" value="">
-                                                    </th:block>
-                                                </th:block>
-
-                                                <!-- p1이 player2: 자동 표시 칸 -->
-                                                <th:block th:if="${match.player2 == p1.name}">
-                                                    <th:block th:if="${match.finished}">
-                                                        <strong th:class="${match.score2 > match.score1} ? 'text-success' : 'text-danger'"
-                                                                th:text="${match.score2}"></strong>
-                                                    </th:block>
-                                                    <th:block th:if="${!match.finished}">
-                                                        <span th:id="'mirror_' + ${match.id}" style="font-weight:bold; color:#aaa;">-</span>
-                                                    </th:block>
-                                                </th:block>
-
-                                            </div>
-                                        </th:block>
-                                    </th:block>
-                                </td>
+                            <tr th:each="player : ${topPlayers}">
+                                <td th:text="${player['name']}"></td>
+                                <td th:text="${player['win']}"></td>
+                                <td th:text="${player['lose']}"></td>
+                                <td th:text="${player['elo']}"></td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
-                <button type="submit" class="btn btn-primary w-100 mb-4">현재 조 리그 결과 일괄 저장</button>
-            </form>
+            </div>
+        </div>
+
+        <!-- 선수 선택 -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card p-4 shadow-sm border-success">
+                    <h3 class="text-success mb-3">2. 오늘 리그 참가 선수 선택</h3>
+                    <form action="/matches/generate" method="post" id="leagueForm">
+                        <div class="mb-3">
+                            <label for="leagueDate" class="form-label fw-bold">리그 날짜</label>
+                            <input type="date" id="leagueDate" name="matchDate" class="form-control" required 
+                                   onchange="location.href='/matches?date=' + this.value">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">참가 선수 검색</label>
+                            <input type="text" id="playerSearch" class="form-control" 
+                                   placeholder="이름 입력 후 엔터" 
+                                   onkeyup="filterPlayers()" 
+                                   onkeydown="if(event.key === 'Enter') { event.preventDefault(); handleEnterKey(); }">
+                            <div id="playerDropdown" class="list-group mt-2" style="max-height: 200px; overflow-y: auto; display: none;">
+                                <button type="button" class="list-group-item list-group-item-action" 
+                                        th:each="player : ${players}" 
+                                        th:data-name="${player.name}"
+                                        onclick="addPlayer(this.getAttribute('data-name'))"
+                                        th:text="${player.name}"></button>
+                            </div>
+                        </div>
+                        <div id="selectedPlayersContainer" class="mb-3 p-2 border rounded" style="min-height: 50px;"></div>
+                        <button type="submit" class="btn btn-success w-100">선택한 선수로 리그 대진 자동 생성</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 리그 결과 -->
+        <div th:if="${playerGroups != null}">
+            <div th:each="group, groupStat : ${playerGroups}" class="row mb-4">
+                <div class="col-12">
+                    <h3 class="mt-4 text-primary">
+                        <span th:text="${playerGroups.size() > 1 ? (groupStat.index + 1) + '조' : '리그'}"></span>
+                        (총 <span th:text="${group.size()}"></span>명)
+                    </h3>
+                    <form action="/matches/save-matrix" method="post">
+                        <div class="table-responsive">
+                            <table class="table table-bordered text-center align-middle league-table" style="table-layout: auto;">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th style="min-width: 80px;">선수</th>
+                                        <th th:each="p : ${group}" th:text="${p.name}" style="min-width: 70px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="p1 : ${group}">
+                                        <th class="table-light text-start" th:text="${p1.name}"></th>
+                                        <td th:each="p2 : ${group}" style="height: auto; padding: 0.5rem; vertical-align: middle;">
+                                            <span th:if="${p1.name == p2.name}" style="color: #aaa;">-</span>
+
+                                            <th:block th:if="${p1.name != p2.name}">
+                                                <th:block th:with="match=${matchMap[p1.name + '_' + p2.name]}">
+                                                    <div th:if="${match != null}">
+                                                        <!-- p1이 player1 -->
+                                                        <th:block th:if="${match.player1 == p1.name}">
+                                                            <th:block th:if="${match.finished}">
+                                                                <strong th:class="${match.score1 > match.score2} ? 'text-success' : 'text-danger'"
+                                                                        th:text="${match.score1}"></strong>
+                                                            </th:block>
+                                                            <th:block th:if="${!match.finished}">
+                                                                <select th:name="'s1_' + ${match.id}"
+                                                                        th:id="'s1_' + ${match.id}"
+                                                                        onchange="autoFill(this)"
+                                                                        style="width: 50px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; text-align: center; font-weight: bold;">
+                                                                    <option value="">-</option>
+                                                                    <option value="3">3</option>
+                                                                    <option value="2">2</option>
+                                                                    <option value="1">1</option>
+                                                                    <option value="0">0</option>
+                                                                </select>
+                                                                <input type="hidden" th:name="'s2_' + ${match.id}" th:id="'s2_' + ${match.id}" value="">
+                                                            </th:block>
+                                                        </th:block>
+
+                                                        <!-- p1이 player2 -->
+                                                        <th:block th:if="${match.player2 == p1.name}">
+                                                            <th:block th:if="${match.finished}">
+                                                                <strong th:class="${match.score2 > match.score1} ? 'text-success' : 'text-danger'"
+                                                                        th:text="${match.score2}"></strong>
+                                                            </th:block>
+                                                            <th:block th:if="${!match.finished}">
+                                                                <span th:id="'mirror_' + ${match.id}" style="font-weight: bold; color: #aaa;">-</span>
+                                                            </th:block>
+                                                        </th:block>
+                                                    </div>
+                                                </th:block>
+                                            </th:block>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 mb-4">현재 조 리그 결과 일괄 저장</button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
+        // ===== 날짜 초기화 =====
         const urlParams = new URLSearchParams(window.location.search);
         const dateParam = urlParams.get('date');
-        document.getElementById('leagueDate').value = dateParam || new Date().toISOString().split('T')[0];
+        if (dateParam) {
+            document.getElementById('leagueDate').value = dateParam;
+        } else {
+            document.getElementById('leagueDate').value = new Date().toISOString().split('T')[0];
+        }
 
+        // ===== 선수 필터링 =====
         function filterPlayers() {
             const input = document.getElementById('playerSearch');
             const filter = input.value.toUpperCase();
@@ -143,63 +221,71 @@
             }
         }
 
+        // ===== 엔터키 처리 =====
         function handleEnterKey() {
             const input = document.getElementById('playerSearch');
             const val = input.value.trim();
             const dropdown = document.getElementById('playerDropdown');
             const buttons = Array.from(dropdown.querySelectorAll('button'));
             const match = buttons.find(btn => btn.style.display !== 'none' && btn.innerText.trim() === val);
-            if (match) addPlayer(match.innerText);
-            else alert("선수 목록을 확인하세요.");
+            if (match) {
+                addPlayer(match.getAttribute('data-name'));
+            } else {
+                alert("선수 목록을 확인하세요.");
+            }
         }
 
+        // ===== 선수 추가 =====
         function addPlayer(name) {
             const container = document.getElementById('selectedPlayersContainer');
             if (Array.from(container.querySelectorAll('input[type="hidden"]')).some(i => i.value === name)) return;
+            
             const span = document.createElement('span');
-            span.className = "badge bg-primary me-2 mb-2 p-2";
-            span.innerHTML = `${name} <span style="cursor:pointer; margin-left:5px;" onclick="this.parentElement.remove()">x</span>`;
+            span.className = "badge bg-primary";
+            span.innerHTML = `${name} <span class="remove-btn" onclick="this.parentElement.remove()">x</span>`;
+            
             const input = document.createElement('input');
-            input.type = "hidden"; input.name = "selectedPlayerNames"; input.value = name;
+            input.type = "hidden";
+            input.name = "selectedPlayerNames";
+            input.value = name;
             span.appendChild(input);
+            
             container.appendChild(span);
             document.getElementById('playerSearch').value = '';
             document.getElementById('playerDropdown').style.display = 'none';
         }
 
-    
+        // ===== 스코어 자동 채우기 =====
         function autoFill(sel) {
-                const id = sel.id.replace('s1_', '');
-                const val = parseInt(sel.value);
-                const hiddenS2 = document.getElementById('s2_' + id);
-                const mirror = document.getElementById('mirror_' + id);
+            const id = sel.id.replace('s1_', '');
+            const val = parseInt(sel.value);
+            const hiddenS2 = document.getElementById('s2_' + id);
+            const mirror = document.getElementById('mirror_' + id);
 
-                if (sel.value === '') {
+            if (sel.value === '') {
+                if (hiddenS2) hiddenS2.value = '';
+                if (mirror) { mirror.textContent = '-'; mirror.style.color = '#aaa'; }
+                sel.style.color = '#333';
+                return;
+            }
+
+            if (val === 3) {
+                const lost = prompt('상대방 세트 수 (0, 1, 2):');
+                if (lost === null || !['0','1','2'].includes(lost)) {
+                    sel.value = '';
                     if (hiddenS2) hiddenS2.value = '';
                     if (mirror) { mirror.textContent = '-'; mirror.style.color = '#aaa'; }
-                    sel.style.color = '#333';
                     return;
                 }
-
-                if (val === 3) {
-                    // 내가 3 → 상대 세트 수 직접 입력
-                    const lost = prompt('상대방 세트 수 (0, 1, 2):');
-                    if (lost === null || !['0','1','2'].includes(lost)) {
-                        sel.value = '';
-                        if (hiddenS2) hiddenS2.value = '';
-                        if (mirror) { mirror.textContent = '-'; mirror.style.color = '#aaa'; }
-                        return;
-                    }
-                    hiddenS2.value = lost;
-                    sel.style.color = '#198754';
-                    if (mirror) { mirror.textContent = lost; mirror.style.color = '#dc3545'; }
-                } else {
-                    // 내가 0/1/2 → 상대 자동으로 3
-                    hiddenS2.value = 3;
-                    sel.style.color = '#dc3545';
-                    if (mirror) { mirror.textContent = '3'; mirror.style.color = '#198754'; }
-                }
+                hiddenS2.value = lost;
+                sel.style.color = '#198754';
+                if (mirror) { mirror.textContent = lost; mirror.style.color = '#dc3545'; }
+            } else {
+                hiddenS2.value = '3';
+                sel.style.color = '#dc3545';
+                if (mirror) { mirror.textContent = '3'; mirror.style.color = '#198754'; }
             }
+        }
     </script>
 </body>
 </html>

@@ -2,37 +2,230 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>연회비 납부 현황</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body { background: #f4f5f7; font-family: 'Noto Sans KR', sans-serif; }
+
+        .page-header {
+            background: #1a1a2e;
+            color: #fff;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        .page-header h2 { font-size: 1.2rem; font-weight: 700; margin: 0; }
+        .btn-home {
+            font-size: 0.85rem;
+            padding: 0.4rem 1rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: #fff;
+            text-decoration: none;
+            background: transparent;
+            transition: background 0.15s;
+            white-space: nowrap;
+        }
+        .btn-home:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+        .section-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1.25rem;
+            border: 1px solid rgba(0,0,0,0.07);
+        }
+
+        /* 납부 통계 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 1.25rem;
+        }
+        .stat-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+            border: 1px solid rgba(0,0,0,0.07);
+        }
+        .stat-card .stat-label { font-size: 0.75rem; color: #888; margin-bottom: 4px; }
+        .stat-card .stat-value { font-size: 1.6rem; font-weight: 700; }
+        .stat-total { color: #1a1a2e; }
+        .stat-paid { color: #17a863; }
+        .stat-unpaid { color: #e03131; }
+
+        /* PC 테이블 */
+        .membership-table { font-size: 0.88rem; }
+        .membership-table thead { background: #1a1a2e; color: #fff; }
+        .membership-table td, .membership-table th { padding: 0.65rem 0.85rem; vertical-align: middle; }
+
+        .grade-badge {
+            display: inline-block;
+            font-size: 0.72rem;
+            padding: 2px 8px;
+            border-radius: 99px;
+            font-weight: 600;
+            background: #e8eaff;
+            color: #3d5af1;
+        }
+
+        .paid-yes { color: #17a863; font-weight: 600; }
+        .paid-no  { color: #e03131; font-weight: 600; }
+
+        .date-text {
+            font-family: 'DM Mono', monospace;
+            font-size: 0.82rem;
+            color: #888;
+        }
+
+        /* 토글 스위치 */
+        .toggle-wrap { display: flex; align-items: center; gap: 8px; }
+        .form-check-input {
+            width: 2.2rem;
+            height: 1.15rem;
+            cursor: pointer;
+        }
+        .form-check-input:checked { background-color: #17a863; border-color: #17a863; }
+
+        /* 모바일 카드 */
+        .member-card-list { display: none; }
+        .member-card {
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 0.65rem;
+            border: 1px solid #eee;
+            background: #fafafa;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .member-card.is-paid { border-left: 4px solid #17a863; }
+        .member-card.is-unpaid { border-left: 4px solid #e03131; }
+
+        .member-card-info { flex: 1; min-width: 0; }
+        .member-card-name { font-weight: 700; font-size: 0.95rem; color: #1a1a2e; }
+        .member-card-sub { font-size: 0.78rem; color: #aaa; margin-top: 2px; }
+
+        .member-card-toggle { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .member-card-toggle span { font-size: 0.7rem; }
+
+        @media (max-width: 768px) {
+            .table-wrap { display: none; }
+            .member-card-list { display: block; }
+            .stats-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 480px) {
+            .page-header { padding: 1rem; }
+            .section-card { padding: 1rem; }
+        }
+    </style>
 </head>
-<div th:replace="~{layout/header :: header}"></div>
-<body class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <body>
+
+    <div th:replace="~{layout/header :: header}"></div>
+
+    <div class="page-header">
         <h2>💰 연회비 납부 현황</h2>
-        <a href="/" class="btn btn-outline-secondary">홈으로 돌아가기</a>
+        <a href="/" class="btn-home">← 홈으로</a>
     </div>
-    
-    <table class="table table-hover table-bordered">
-        <thead class="table-dark text-center">
-            <tr>
-                <th>이름</th>
-                <th>등급</th>
-                <th>납부 여부</th>
-                <th>최근 납부일</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr th:each="player : ${players}" class="text-center">
-                <td th:text="${player.name}">이름</td>
-                <td th:text="${player.grade}">등급</td>
-                <td>
-                    <input type="checkbox" class="form-check-input" 
-                           th:checked="${player.paidMembership}" 
-                           th:onchange="'fetch(\'/players/updatePayment?id=' + ${player.id} + '&paid=\' + this.checked, {method:\'POST\'})'">
-                </td>
-                <td th:text="${player.membershipDate}">날짜</td>
-            </tr>
-        </tbody>
-    </table>
-</body>
+
+    <div class="container-fluid px-3 pb-5">
+
+        <!-- 통계 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">전체 인원</div>
+                <div class="stat-value stat-total" th:text="${totalCount}">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">납부 완료</div>
+                <div class="stat-value stat-paid" th:text="${paidCount}">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">미납</div>
+                <div class="stat-value stat-unpaid" th:text="${unpaidCount}">0</div>
+            </div>
+        </div>
+
+        <!-- PC 테이블 -->
+        <div class="section-card table-wrap">
+            <div class="table-responsive">
+                <table class="table table-hover membership-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>이름</th>
+                            <th>부수</th>
+                            <th class="text-center">납부 여부</th>
+                            <th>최근 납부일</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="player, stat : ${players}">
+                            <td class="text-muted" th:text="${stat.index + 1}"></td>
+                            <td class="fw-bold" th:text="${player.name}"></td>
+                            <td><span class="grade-badge" th:text="${player.grade}"></span></td>
+                            <td class="text-center">
+                                <div class="toggle-wrap justify-content-center">
+                                    <input type="checkbox" class="form-check-input"
+                                        role="switch"
+                                        th:checked="${player.paidMembership}"
+                                        th:onchange="'updatePayment(' + ${player.id} + ', this.checked)'">
+                                    <span th:class="${player.paidMembership} ? 'paid-yes' : 'paid-no'"
+                                        th:text="${player.paidMembership} ? '납부' : '미납'"></span>
+                                </div>
+                            </td>
+                            <td class="date-text" th:text="${player.membershipDate != null ? player.membershipDate : '-'}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 모바일 카드 -->
+        <div class="member-card-list">
+            <div th:each="player : ${players}"
+                th:class="${player.paidMembership} ? 'member-card is-paid' : 'member-card is-unpaid'">
+                <div class="member-card-info">
+                    <div class="member-card-name" th:text="${player.name}"></div>
+                    <div class="member-card-sub">
+                        <span th:text="${player.grade}"></span>
+                        <span th:if="${player.membershipDate != null}"
+                            th:text="' · ' + ${player.membershipDate}"></span>
+                    </div>
+                </div>
+                <div class="member-card-toggle">
+                    <input type="checkbox" class="form-check-input"
+                        role="switch"
+                        th:checked="${player.paidMembership}"
+                        th:onchange="'updatePayment(' + ${player.id} + ', this.checked)'">
+                    <span th:class="${player.paidMembership} ? 'paid-yes' : 'paid-no'"
+                        th:text="${player.paidMembership} ? '납부' : '미납'"
+                        style="font-size:0.72rem;"></span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+    function updatePayment(id, paid) {
+        fetch('/players/updatePayment?id=' + id + '&paid=' + paid, { method: 'POST' })
+            .then(res => {
+                if (!res.ok) alert('저장 실패');
+            })
+            .catch(() => alert('오류가 발생했습니다.'));
+    }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    </body>
 </html>

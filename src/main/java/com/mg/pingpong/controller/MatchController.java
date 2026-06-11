@@ -115,6 +115,8 @@ public class MatchController {
         match.setFinished(true);
         matchRepository.save(match);
 
+        syncPlayerElos();
+
         return "redirect:/matches?date=" + match.getMatchDate();
     }
 
@@ -167,6 +169,9 @@ public class MatchController {
                 matchRepository.save(match);
             }
         }
+        syncPlayerElos();
+
+
         return "redirect:/matches?date=" + matchDate;
     }
 
@@ -204,5 +209,35 @@ public class MatchController {
             case "5부" -> 1200; case "6부" -> 1000; case "7부" -> 800; case "8부" -> 600;
             default -> 500;
         };
+    }
+
+    @Transactional
+    private void syncPlayerElos() {
+        // 1. EloCalculationService에서 계산된 ELO 가져오기
+        Map<String, Integer> eloMap = eloCalculationService.calculateAllElo();
+        Map<String, int[]> winLoseMap = eloCalculationService.calculateWinLose();
+        
+        // 2. 모든 플레이어 조회
+        List<Player> allPlayers = playerRepository.findAll();
+        
+        // 3. 각 플레이어의 ELO/승패 업데이트
+        for (Player player : allPlayers) {
+            String playerName = player.getName();
+            
+            if (eloMap.containsKey(playerName)) {
+                player.setElo(eloMap.get(playerName));
+            }
+            
+            if (winLoseMap.containsKey(playerName)) {
+                int[] wl = winLoseMap.get(playerName);
+                player.setWin(wl[0]);
+                player.setLose(wl[1]);
+            }
+            
+            playerRepository.save(player);
+        }
+        
+        // 즉시 DB 반영
+        playerRepository.flush();
     }
 }
