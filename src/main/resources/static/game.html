@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" th:remove="all">
+<!--/*@thymesafe*/-->
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>탁구 & 슬롯</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0d0d14;--bg2:#14141e;--bg3:#1a1a28;--border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);--text:#ececf4;--text2:#8888aa;--text3:#4a4a66;--accent:#8b7ff5;--accent2:#6558e0;--gold:#f5a623;--gold2:#e89510;--win:#3ecf8e;--lose:#f06060}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+header{width:100%;max-width:700px;padding:16px 20px 0;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:17px;font-weight:700}
+.logo em{color:var(--accent);font-style:normal}
+#coin-hud{display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border2);border-radius:20px;padding:5px 14px;font-size:13px;font-weight:600}
+#coin-val{color:var(--gold)}
+.tabs{display:flex;gap:4px;width:100%;max-width:700px;padding:12px 20px 0}
+.tab{flex:1;padding:10px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:var(--text2);font-size:14px;font-weight:500;cursor:pointer;transition:all .15s}
+.tab.on{background:var(--accent2);border-color:var(--accent2);color:#fff}
+.panel{display:none;width:100%;max-width:700px;padding:14px 20px 60px}
+.panel.on{display:block}
+#diff-row{display:flex;gap:4px;margin-bottom:10px;justify-content:flex-end}
+.dbtn{padding:4px 12px;border-radius:12px;font-size:12px;font-weight:500;border:1px solid var(--border2);background:0;color:var(--text3);cursor:pointer}
+.dbtn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+#pong-scores{display:flex;justify-content:center;align-items:center;gap:36px;margin-bottom:10px}
+.sc-cell{text-align:center}
+.sc-label{font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--text3)}
+.sc-num{font-size:38px;font-weight:700;line-height:1.1}
+.sc-num.p{color:#c8c4f8}
+.sc-num.c{color:#f08080}
+#sc-sep{font-size:20px;color:var(--text3)}
+#pong-canvas{display:block;width:100%;border-radius:14px;border:1px solid var(--border);touch-action:none;cursor:none}
+#pong-msg{text-align:center;font-size:13px;color:var(--text2);margin:10px 0 8px;min-height:20px}
+#pong-btn{display:block;margin:0 auto;padding:10px 36px;background:var(--accent2);border:0;border-radius:10px;color:#fff;font-size:14px;font-weight:600;cursor:pointer}
+#pong-btn:hover{background:var(--accent)}
+#coin-earn-toast{display:none;text-align:center;margin-top:10px;background:rgba(62,207,142,.1);border:1px solid rgba(62,207,142,.25);border-radius:10px;padding:10px;font-size:14px;font-weight:600;color:var(--win)}
+#slot-balance-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.bal-label{font-size:12px;color:var(--text3);font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.bal-val{font-size:20px;font-weight:700;color:var(--gold)}
+#slot-machine{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:20px 16px;margin-bottom:12px;display:flex;flex-direction:column;align-items:center;gap:16px}
+#reels{display:flex;gap:10px;justify-content:center}
+.reel-wrap{width:80px;height:90px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;overflow:hidden;position:relative}
+.reel-inner{display:flex;flex-direction:column;transition:transform .5s cubic-bezier(.22,1,.36,1)}
+.reel-symbol{height:90px;display:flex;align-items:center;justify-content:center;font-size:40px;flex-shrink:0}
+.reel-wrap.spinning .reel-inner{transition:none}
+.reel-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(to bottom,rgba(26,26,40,.7) 0%,transparent 30%,transparent 70%,rgba(26,26,40,.7) 100%);pointer-events:none;border-radius:10px}
+#win-line{width:100%;height:3px;background:0;border-radius:2px;transition:background .3s}
+#win-line.lit{background:var(--gold);box-shadow:0 0 8px var(--gold)}
+#bet-controls{width:100%;display:flex;flex-direction:column;gap:8px}
+#bet-size-row{display:flex;align-items:center;gap:8px}
+.label{font-size:12px;color:var(--text2);white-space:nowrap}
+#bet-slider{flex:1}
+#bet-display{font-size:14px;font-weight:600;color:var(--gold);min-width:48px;text-align:right}
+#spin-btn{width:100%;padding:14px;border:0;border-radius:10px;background:linear-gradient(135deg,var(--gold2),var(--gold));color:#1a0f00;font-size:16px;font-weight:700;cursor:pointer;transition:opacity .15s,transform .1s}
+#spin-btn:hover:not(:disabled){opacity:.9}
+#spin-btn:active:not(:disabled){transform:scale(.98)}
+#spin-btn:disabled{background:var(--bg3);color:var(--text3);cursor:default}
+#paytable{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:12px 14px}
+.pt-title{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px}
+.pt-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:4px 0}
+.pt-syms{letter-spacing:2px;font-size:16px}
+.pt-mult{color:var(--gold);font-weight:600}
+#slot-result{min-height:44px;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px;font-size:18px;font-weight:700}
+#slot-result.win{color:var(--win)}
+#slot-result.lose{color:var(--lose)}
+#slot-result.jackpot{color:var(--gold);font-size:22px}
+#hist-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:12px 14px}
+.h-title{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px}
+.h-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border)}
+.h-row:last-child{border-bottom:none}
+.h-syms{letter-spacing:1px}
+.h-net.w{color:var(--win);font-weight:600}
+.h-net.l{color:var(--lose)}
+@media(max-width:480px){.reel-wrap{width:66px;height:76px}.reel-symbol{height:76px;font-size:32px}.sc-num{font-size:30px}}
+</style>
+
+<script>
+// 페이지 로드 완료까지 기다렸다가 실행
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Game loaded successfully');
+});
+</script>
+
+</head>
+  <body>
+    <header style="width:100%; display:flex; justify-content:space-between; align-items:center; padding:16px 20px 0;">
+      <div>
+        <a href="/" class="btn btn-outline-primary" style="margin-right:8px;">🏠 홈으로</a>
+        <span class="logo">🏓 탁구 <em>&</em> 🎰 슬롯</span>
+      </div>
+      <div id="coin-hud"><span style="font-size:15px">🪙</span><span id="coin-val">1,000</span></div>
+    </header>
+  <div class="tabs">
+    <button class="tab on" onclick="switchTab('pong')">🏓 탁구</button>
+    <button class="tab" onclick="switchTab('slot')">🎰 슬롯</button>
+  </div>
+    <div class="panel on" id="pong-panel">
+      <div id="diff-row">
+      <button class="dbtn on" onclick="setDiff('easy')">쉬움</button>
+      <button class="dbtn" onclick="setDiff('normal')">보통</button>
+      <button class="dbtn" onclick="setDiff('hard')">어려움</button>
+    </div>
+  <div id="pong-scores">
+  <div class="sc-cell"><div class="sc-label">나</div><div class="sc-num p" id="sp">0</div></div>
+  <div id="sc-sep">:</div>
+  <div class="sc-cell"><div class="sc-label">컴퓨터</div><div class="sc-num c" id="sc">0</div></div>
+  </div>
+  <canvas id="pong-canvas"></canvas>
+  <div id="pong-msg">시작 버튼을 눌러주세요</div>
+  <button id="pong-btn" onclick="startPong()">▶ 시작</button>
+  <div id="coin-earn-toast"></div>
+  </div>
+  <div class="panel" id="slot-panel">
+  <div id="slot-balance-row">
+  <span class="bal-label">보유 코인</span>
+  <span class="bal-val" id="slot-coins">1,000</span>
+  </div>
+  <div id="slot-machine">
+  <div id="reels">
+  <div class="reel-wrap" id="reel0"><div class="reel-inner" id="ri0"></div><div class="reel-overlay"></div></div>
+  <div class="reel-wrap" id="reel1"><div class="reel-inner" id="ri1"></div><div class="reel-overlay"></div></div>
+  <div class="reel-wrap" id="reel2"><div class="reel-inner" id="ri2"></div><div class="reel-overlay"></div></div>
+  </div>
+  <div id="win-line"></div>
+  <div id="slot-result"></div>
+  <div id="bet-controls">
+  <div id="bet-size-row">
+  <span class="label">베팅</span>
+  <input type="range" id="bet-slider" min="0" max="5" step="1" value="1" oninput="updateBetDisplay()">
+  <span id="bet-display">10</span>
+  </div>
+  <button id="spin-btn" onclick="spin()">🎰 스핀</button>
+  </div>
+  </div>
+  <div id="paytable">
+  <div class="pt-title">배당표</div>
+  <div class="pt-row"><span class="pt-syms">🏓🏓🏓</span><span class="pt-mult">× 50</span></div>
+  <div class="pt-row"><span class="pt-syms">💎💎💎</span><span class="pt-mult">× 25</span></div>
+  <div class="pt-row"><span class="pt-syms">같은 심볼 2개</span><span class="pt-mult">× 1.5</span></div>
+  </div>
+  <div id="hist-wrap" style="display:none;margin-top:12px">
+  <div class="h-title">최근 스핀</div>
+  <div id="hist-body"></div>
+  </div>
+  </div>
+  <script>
+  let coins=1000;
+  function updateCoinHUD(){document.getElementById('coin-val').textContent=coins.toLocaleString();document.getElementById('slot-coins').textContent=coins.toLocaleString()}
+  function switchTab(t){document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('on',(i===0&&t==='pong')||(i===1&&t==='slot')));document.getElementById('pong-panel').classList.toggle('on',t==='pong');document.getElementById('slot-panel').classList.toggle('on',t==='slot');if(t==='pong')resizeCanvas();updateBetDisplay()}
+  const canvas=document.getElementById('pong-canvas');const ctx=canvas.getContext('2d');let CW,CH;
+  function resizeCanvas(){const panel=document.getElementById('pong-panel');CW=Math.min(panel.clientWidth-40,660);CH=Math.round(CW*0.5);canvas.width=CW;canvas.height=CH;if(!pg.running)drawStatic()}
+  const COIN_REWARD={easy:30,normal:60,hard:120};const AI_SPD={easy:0.042,normal:0.066,hard:0.093};
+  let pg={running:false,pScore:0,cScore:0,py:0,cy:0,bx:0,by:0,bdx:0,bdy:0,spd:0,diff:'easy',trail:[],raf:null};let targetPY=null;
+  function setDiff(d){pg.diff=d;document.querySelectorAll('.dbtn').forEach(b=>b.classList.toggle('on',b.textContent==={easy:'쉬움',normal:'보통',hard:'어려움'}[d]))}
+  function PW(){return Math.max(8,Math.round(CW*0.018))}function PH(){return Math.round(CH*0.2)}function BR(){return Math.max(5,Math.round(CW*0.018))}
+  function resetBall(right){pg.py=CH/2-PH()/2;pg.cy=CH/2-PH()/2;pg.bx=CW/2;pg.by=CH/2;const a=(Math.random()*0.5-0.25),sp=CW*0.009;pg.spd=sp;pg.bdx=(right?1:-1)*sp*Math.cos(a);pg.bdy=sp*Math.sin(a);pg.trail=[]}
+  function startPong(){pg.pScore=0;pg.cScore=0;document.getElementById('sp').textContent=0;document.getElementById('sc').textContent=0;document.getElementById('pong-msg').innerHTML='먼저 11점을 내면 승리!';document.getElementById('pong-btn').textContent='↺ 재시작';document.getElementById('coin-earn-toast').style.display='none';pg.running=true;resetBall(Math.random()>0.5);if(pg.raf)cancelAnimationFrame(pg.raf);pongLoop()}
+  canvas.addEventListener('mousemove',e=>{const r=canvas.getBoundingClientRect();targetPY=(e.clientY-r.top)-PH()/2});
+  canvas.addEventListener('touchmove',e=>{e.preventDefault();const r=canvas.getBoundingClientRect(),t=e.touches[0];targetPY=(t.clientY-r.top)-PH()/2},{passive:false});
+  function pongLoop(){if(!pg.running)return;if(targetPY!==null)pg.py+=(targetPY-pg.py)*0.18;pg.py=Math.max(0,Math.min(CH-PH(),pg.py));if(pg.bx>CW*0.5){const d=pg.by-(pg.cy+PH()/2);pg.cy+=d*AI_SPD[pg.diff]*(CW/360)}pg.cy=Math.max(0,Math.min(CH-PH(),pg.cy));pg.trail.push({x:pg.bx,y:pg.by});if(pg.trail.length>8)pg.trail.shift();pg.bx+=pg.bdx;pg.by+=pg.bdy;if(pg.by-BR()<0){pg.by=BR();pg.bdy=Math.abs(pg.bdy)}if(pg.by+BR()>CH){pg.by=CH-BR();pg.bdy=-Math.abs(pg.bdy)}const px1=CW*0.016,px2=px1+PW();if(pg.bx-BR()<px2&&pg.bx+BR()>px1&&pg.by>pg.py&&pg.by<pg.py+PH()&&pg.bdx<0){pg.bx=px2+BR();const hp=(pg.by-pg.py)/PH()-0.5,sp=Math.min(pg.spd*1.05,CW*0.019);pg.spd=sp;pg.bdx=sp*Math.cos(hp*1.1);pg.bdy=sp*Math.sin(hp*2.3)}const cx1=CW-CW*0.016-PW(),cx2=cx1+PW();if(pg.bx+BR()>cx1&&pg.bx-BR()<cx2&&pg.by>pg.cy&&pg.by<pg.cy+PH()&&pg.bdx>0){pg.bx=cx1-BR();const hp=(pg.by-pg.cy)/PH()-0.5,sp=Math.min(pg.spd*1.05,CW*0.019);pg.spd=sp;pg.bdx=-sp*Math.cos(hp*1.1);pg.bdy=sp*Math.sin(hp*2.3)}if(pg.bx<0){pg.cScore++;document.getElementById('sc').textContent=pg.cScore;if(pg.cScore>=11){endPong(false);return}resetBall(true)}if(pg.bx>CW){pg.pScore++;document.getElementById('sp').textContent=pg.pScore;if(pg.pScore>=11){endPong(true);return}resetBall(false)}drawPong();pg.raf=requestAnimationFrame(pongLoop)}
+  function drawPong(){ctx.fillStyle='#0d0d14';ctx.fillRect(0,0,CW,CH);ctx.save();ctx.setLineDash([7,5]);ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(CW/2,0);ctx.lineTo(CW/2,CH);ctx.stroke();ctx.restore();rRect(CW*0.016,pg.py,PW(),PH(),PW()/2,'#c8c4f8');rRect(CW-CW*0.016-PW(),pg.cy,PW(),PH(),PW()/2,'#f08080');pg.trail.forEach((t,i)=>{ctx.beginPath();ctx.arc(t.x,t.y,BR()*(i/pg.trail.length),0,Math.PI*2);ctx.fillStyle=`rgba(139,127,245,${(i/pg.trail.length)*0.28})`;ctx.fill()});ctx.beginPath();ctx.arc(pg.bx,pg.by,BR(),0,Math.PI*2);ctx.fillStyle='#8b7ff5';ctx.fill();ctx.beginPath();ctx.arc(pg.bx-BR()*0.25,pg.by-BR()*0.25,BR()*0.28,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,0.3)';ctx.fill()}
+  function drawStatic(){if(!CW||!CH)return;ctx.fillStyle='#0d0d14';ctx.fillRect(0,0,CW,CH);ctx.save();ctx.setLineDash([7,5]);ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(CW/2,0);ctx.lineTo(CW/2,CH);ctx.stroke();ctx.restore();rRect(CW*0.016,CH/2-PH()/2,PW(),PH(),PW()/2,'#c8c4f8');rRect(CW-CW*0.016-PW(),CH/2-PH()/2,PW(),PH(),PW()/2,'#f08080');ctx.beginPath();ctx.arc(CW/2,CH/2,BR(),0,Math.PI*2);ctx.fillStyle='#8b7ff5';ctx.fill()}
+  function rRect(x,y,w,h,r,color){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();ctx.fillStyle=color;ctx.fill()}
+  function endPong(won){pg.running=false;drawPong();ctx.fillStyle='rgba(0,0,0,0.55)';ctx.fillRect(0,0,CW,CH);ctx.textAlign='center';ctx.font=`700 ${Math.round(CW*0.055)}px 'Segoe UI',sans-serif`;ctx.fillStyle='#fff';ctx.fillText(won?'🏆 승리!':'😓 패배...',CW/2,CH/2-6);ctx.font=`500 ${Math.round(CW*0.03)}px 'Segoe UI',sans-serif`;ctx.fillStyle='rgba(255,255,255,0.55)';ctx.fillText('재시작 버튼을 눌러주세요',CW/2,CH/2+28);document.getElementById('pong-msg').textContent=won?'게임 승리!':'아쉽게도 패배...';const toast=document.getElementById('coin-earn-toast');if(won){const reward=COIN_REWARD[pg.diff];coins+=reward;updateCoinHUD();toast.style.display='block';toast.textContent='🪙 +'+reward+'코인 획득!'}else{toast.style.display='block';toast.style.background='rgba(240,96,96,0.08)';toast.style.borderColor='rgba(240,96,96,0.2)';toast.style.color='var(--lose)';toast.textContent='다음엔 이길 수 있어요!'}}
+  const SYMBOLS=['🏓','💎','7️⃣','⭐','🍒','🍋','🍊','🍇'];const WEIGHTS=[1,2,3,5,8,10,12,14];const MULT={'🏓':50,'💎':25,'7️⃣':15,'⭐':8,'🍒':5,'🍋':3,'🍊':2,'🍇':2};const BET_LEVELS=[5,10,20,50,100,200];const REEL_LEN=24;let slotHistory=[];let spinning=false;let reelData=[[],[],[]];
+  function buildReels(){for(let r=0;r<3;r++){reelData[r]=[];for(let i=0;i<SYMBOLS.length;i++)for(let w=0;w<WEIGHTS[i];w++)reelData[r].push(SYMBOLS[i]);for(let i=reelData[r].length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[reelData[r][i],reelData[r][j]]=[reelData[r][j],reelData[r][i]]}while(reelData[r].length<REEL_LEN)reelData[r].push(...reelData[r].slice(0,4));renderReelDOM(r,0)}}
+  function renderReelDOM(r,stopIdx){const ri=document.getElementById('ri'+r);ri.innerHTML='';const len=reelData[r].length;for(let i=-4;i<=4;i++){const idx=((stopIdx+i)%len+len)%len;const d=document.createElement('div');d.className='reel-symbol';d.textContent=reelData[r][idx];ri.appendChild(d)}ri.style.transform=`translateY(${-4*90}px)`}
+  function updateBetDisplay(){const v=parseInt(document.getElementById('bet-slider').value);document.getElementById('bet-display').textContent=BET_LEVELS[v].toLocaleString();document.getElementById('spin-btn').disabled=coins<BET_LEVELS[v]}
+  let stopPositions=[0,0,0];
+  function spin(){if(spinning)return;const betIdx=parseInt(document.getElementById('bet-slider').value);const bet=BET_LEVELS[betIdx];if(coins<bet)return;coins-=bet;updateCoinHUD();updateBetDisplay();spinning=true;document.getElementById('spin-btn').disabled=true;document.getElementById('slot-result').textContent='';document.getElementById('slot-result').className='';document.getElementById('win-line').classList.remove('lit');const finals=[0,1,2].map(r=>Math.floor(Math.random()*reelData[r].length));[0,1,2].forEach((r,ri_idx)=>{const stopDelay=600+ri_idx*400;const spinDuration=300+ri_idx*200;const reel=document.getElementById('reel'+r);reel.classList.add('spinning');const inner=document.getElementById('ri'+r);let frame=0;const fastInterval=setInterval(()=>{frame++;const tempIdx=(stopPositions[r]+frame*3)%reelData[r].length;renderReelDOM(r,tempIdx)},60);setTimeout(()=>{clearInterval(fastInterval);reel.classList.remove('spinning');stopPositions[r]=finals[r];renderReelDOM(r,finals[r]);if(ri_idx===2)setTimeout(()=>resolveResult(finals,bet),200)},spinDuration+stopDelay)});setTimeout(()=>{spinning=false;updateBetDisplay()},600+2*400+300+2*200+300)}
+  function resolveResult(finals,bet){const syms=finals.map((fi,r)=>reelData[r][fi]);let mult=0;let resultText='';let cls='lose';if(syms[0]===syms[1]&&syms[1]===syms[2]){mult=MULT[syms[0]];if(syms[0]==='🏓'){resultText='🎉 잭팟!! +'+Math.round(bet*mult).toLocaleString()+'코인';cls='jackpot'}else{resultText='🏆 트리플! +'+Math.round(bet*mult).toLocaleString()+'코인';cls='win'}}else if(syms[0]===syms[1]||syms[1]===syms[2]||syms[0]===syms[2]){mult=1.5;resultText='✨ 페어! +'+Math.round(bet*mult).toLocaleString()+'코인';cls='win'}else{resultText='꽝... -'+bet.toLocaleString()+'코인';cls='lose'}const res=document.getElementById('slot-result');res.textContent=resultText;res.className=cls;if(mult>0){const payout=Math.round(bet*mult);coins+=payout;updateCoinHUD();document.getElementById('win-line').classList.add('lit');setTimeout(()=>document.getElementById('win-line').classList.remove('lit'),1200)}const net=mult>0?Math.round(bet*mult)-bet:-bet;slotHistory.unshift({syms:syms.join(' '),net,bet});if(slotHistory.length>8)slotHistory.pop();renderSlotHistory();updateBetDisplay();if(coins<=0){setTimeout(()=>{coins=200;updateCoinHUD();updateBetDisplay();document.getElementById('slot-result').textContent='코인이 없어 200코인 지급됐어요!';document.getElementById('slot-result').className='win'},1500)}}
+  function renderSlotHistory(){const hw=document.getElementById('hist-wrap');hw.style.display='block';document.getElementById('hist-body').innerHTML=slotHistory.map(h=>`<div class="h-row"><span class="h-syms">${h.syms}</span><span class="h-net ${h.net>=0?'w':'l'}">${h.net>=0?'+':''}${h.net.toLocaleString()}</span></div>`).join('')}
+  window.addEventListener('resize',()=>{if(document.getElementById('pong-panel').classList.contains('on'))resizeCanvas()});
+  buildReels();updateCoinHUD();updateBetDisplay();setTimeout(()=>{resizeCanvas();drawStatic()},50);
+  </script>
+  </body>
+</html>

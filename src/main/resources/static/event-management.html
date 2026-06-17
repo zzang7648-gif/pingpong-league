@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>경기 관리</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f5f7fa;
+  --bg2: #ffffff;
+  --border: #e0e6ed;
+  --text: #2c3e50;
+  --text2: #7f8c8d;
+  --accent: #3498db;
+  --accent2: #2980b9;
+  --success: #27ae60;
+  --danger: #e74c3c;
+}
+body { 
+  background: var(--bg); 
+  color: var(--text); 
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
+  padding: 20px;
+}
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid var(--border);
+}
+.logo {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+}
+.home-btn {
+  padding: 8px 16px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-block;
+}
+.home-btn:hover { background: var(--accent2); }
+
+.section {
+  background: var(--bg2);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+}
+.section-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--text);
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+.form-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+}
+.form-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.btn {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-primary {
+  background: var(--success);
+  color: white;
+  width: 100%;
+}
+.btn-primary:hover { background: #229954; }
+.btn-danger {
+  background: var(--danger);
+  color: white;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+.btn-danger:hover { background: #c0392b; }
+
+.event-list {
+  max-height: 600px;
+  overflow-y: auto;
+}
+.event-item {
+  background: var(--bg);
+  border-left: 4px solid var(--accent);
+  padding: 16px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+.event-info {
+  flex: 1;
+}
+.event-name {
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+.event-date {
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 8px;
+}
+.event-result {
+  font-size: 13px;
+  margin-top: 8px;
+}
+.event-result.completed {
+  color: var(--success);
+  font-weight: 600;
+}
+.event-result.pending {
+  color: var(--text2);
+  font-style: italic;
+}
+
+.event-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 150px;
+}
+.result-form {
+  background: #f9f9f9;
+  padding: 8px;
+  border-radius: 4px;
+  display: flex;
+  gap: 6px;
+  flex-direction: column;
+  font-size: 12px;
+}
+.result-form input {
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 12px;
+}
+.result-form button {
+  padding: 6px 10px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+}
+.result-form button:hover {
+  background: var(--accent2);
+}
+
+.empty-message {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text2);
+  font-size: 14px;
+}
+
+.alert {
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+.alert-success {
+  background: #d3f9e5;
+  color: var(--success);
+  border: 1px solid #6fcf97;
+}
+.alert-error {
+  background: #ffe3e3;
+  color: var(--danger);
+  border: 1px solid #fa5252;
+}
+
+@media (max-width: 768px) {
+  .form-row { grid-template-columns: 1fr; }
+  .event-item { flex-direction: column; }
+  .event-actions { flex-direction: row; min-width: auto; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">⚙️ 경기 관리</div>
+    <a href="/" class="home-btn">🏠 홈으로</a>
+  </header>
+
+  <!-- 경기 생성 섹션 -->
+  <div class="section">
+    <div class="section-title">📝 경기 생성</div>
+    
+    <div id="createAlert"></div>
+    
+    <div class="form-group">
+      <label class="form-label">경기 날짜</label>
+      <input type="date" id="eventDate" class="form-input">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">경기명</label>
+      <input type="text" id="eventName" class="form-input" placeholder="예: 5-6승급전" maxlength="100">
+    </div>
+
+    <button class="btn btn-primary" onclick="addEvent()">✨ 경기 생성</button>
+  </div>
+
+  <!-- 경기 목록 섹션 -->
+  <div class="section">
+    <div class="section-title">📊 경기 목록</div>
+    
+    <div id="listAlert"></div>
+    
+    <div class="event-list" id="eventList">
+      <div class="empty-message">경기가 없습니다</div>
+    </div>
+  </div>
+</div>
+
+<script th:inline="none">
+const PLAYERS = ['장민규', '이재우', '노수빈', '손효성', '김도현', '박정길'];
+let events = [];
+
+function loadEvents() {
+  fetch('/api/all-events')
+    .then(r => r.json())
+    .then(data => {
+      events = data;
+      renderEvents();
+    })
+    .catch(err => console.error('경기 로드 실패:', err));
+}
+
+function renderEvents() {
+  const container = document.getElementById('eventList');
+  
+  if (events.length === 0) {
+    container.innerHTML = '<div class="empty-message">경기가 없습니다</div>';
+    return;
+  }
+  
+  container.innerHTML = events.map(e => `
+    <div class="event-item">
+      <div class="event-info">
+        <div class="event-name">${e.eventName}</div>
+        <div class="event-date">📅 ${e.eventDate}</div>
+        <div class="event-result ${e.firstPlaceName ? 'completed' : 'pending'}">
+          ${e.firstPlaceName ? `✓ 결과: 1등 ${e.firstPlaceName}, 2등 ${e.secondPlaceName}` : '⏳ 결과 미입력'}
+        </div>
+      </div>
+      <div class="event-actions">
+        ${!e.firstPlaceName ? `
+          <div class="result-form">
+            <input type="text" id="first-${e.id}" placeholder="1등 선수명" list="playerList">
+            <input type="text" id="second-${e.id}" placeholder="2등 선수명" list="playerList">
+            <button onclick="submitResult(${e.id})">저장</button>
+          </div>
+        ` : `
+          <button class="btn btn-danger" style="width: 100%;" onclick="deleteEvent(${e.id})">🗑️ 삭제</button>
+        `}
+      </div>
+    </div>
+  `).join('');
+}
+
+function addEvent() {
+  const date = document.getElementById('eventDate').value;
+  const name = document.getElementById('eventName').value.trim();
+  const alert = document.getElementById('createAlert');
+  
+  if (!date || !name) {
+    showAlert(alert, '날짜와 경기명을 입력해주세요', 'error');
+    return;
+  }
+  
+  const formData = new FormData();
+  formData.append('eventDate', date);
+  formData.append('eventName', name);
+  
+  fetch('/api/event/create', {
+    method: 'POST',
+    body: formData
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      showAlert(alert, '경기가 생성되었습니다', 'success');
+      document.getElementById('eventDate').value = '';
+      document.getElementById('eventName').value = '';
+      loadEvents();
+    } else {
+      showAlert(alert, data.message || '생성 실패', 'error');
+    }
+  })
+  .catch(err => {
+    showAlert(alert, '생성 실패: ' + err.message, 'error');
+  });
+}
+
+function submitResult(eventId) {
+  const firstInput = document.getElementById(`first-${eventId}`);
+  const secondInput = document.getElementById(`second-${eventId}`);
+  const first = firstInput.value.trim();
+  const second = secondInput.value.trim();
+  
+  if (!first || !second) {
+    alert('1등과 2등을 모두 입력해주세요');
+    return;
+  }
+  
+  if (first === second) {
+    alert('1등과 2등은 다른 선수여야 합니다');
+    return;
+  }
+  
+  const formData = new FormData();
+  formData.append('firstPlace', first);
+  formData.append('secondPlace', second);
+  
+  fetch(`/api/event/${eventId}/result`, {
+    method: 'PUT',
+    body: formData
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      alert('결과가 저장되었습니다');
+      loadEvents();
+    } else {
+      alert('저장 실패: ' + data.message);
+    }
+  })
+  .catch(err => alert('저장 실패: ' + err.message));
+}
+
+function deleteEvent(eventId) {
+  if (confirm('경기를 삭제하시겠습니까?')) {
+    fetch(`/api/event/${eventId}`, {
+      method: 'DELETE'
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        loadEvents();
+      } else {
+        alert('삭제 실패');
+      }
+    })
+    .catch(err => alert('삭제 실패: ' + err.message));
+  }
+}
+
+function showAlert(element, message, type) {
+  element.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+  setTimeout(() => {
+    element.innerHTML = '';
+  }, 3000);
+}
+
+// 초기화
+document.getElementById('eventDate').valueAsDate = new Date();
+loadEvents();
+</script>
+
+<datalist id="playerList">
+  <option value="장민규"></option>
+  <option value="이재우"></option>
+  <option value="노수빈"></option>
+  <option value="손효성"></option>
+  <option value="김도현"></option>
+  <option value="박정길"></option>
+</datalist>
+</body>
+</html>

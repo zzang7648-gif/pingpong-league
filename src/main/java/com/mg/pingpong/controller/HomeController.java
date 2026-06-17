@@ -7,10 +7,18 @@ import lombok.RequiredArgsConstructor;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
 import java.util.List;
+import java.util.Map;
+import com.mg.pingpong.entity.Event;
+import com.mg.pingpong.service.EventService;
+
 
 
 @Controller
@@ -18,7 +26,7 @@ import java.util.List;
 public class HomeController {
 
     private final WeatherRepository weatherRepository;
-  
+    private final EventService eventService;
 
     @GetMapping("/")
     public String home(Model model) {
@@ -43,4 +51,16 @@ public class HomeController {
     public String elo() {
         return "elo";
     }
+    @GetMapping("/game")
+    public String game() {
+        return "redirect:/game.html";
+    }
+
+    
+    @GetMapping("/predict")
+    public String predict() {
+        return "redirect:/prediction.html";  // 새 파일로 리다이렉트
+    }
+
+    
 }
