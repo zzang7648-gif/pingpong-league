@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import com.mg.pingpong.repository.PlayerRepository;
+import com.mg.pingpong.entity.Player;
 
 @Controller
 @RequiredArgsConstructor
@@ -18,6 +20,7 @@ public class PredictionController {
     
     private final EventService eventService;
     private final PredictionService predictionService;
+    private final PlayerRepository playerRepository;
     
     // API: 날짜별 경기 조회
     @GetMapping("/api/events")
@@ -112,4 +115,14 @@ public Map<String, Object> updateEventResult(
             return Map.of("success", "false");
         }
     }
+
+    @GetMapping("/api/players")
+    @ResponseBody
+    public List<String> getAllPlayers() {
+        return playerRepository.findAll()
+            .stream()
+            .map(Player::getName)
+            .toList();
+    }
+
 }

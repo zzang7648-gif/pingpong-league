@@ -410,7 +410,18 @@
         </div>
 
         <script th:inline="none">
-        const PLAYERS = ['장민규', '이재우', '노수빈', '손효성', '김도현', '박정길'];
+        let PLAYERS = [];
+
+        function loadPlayers() {
+          fetch('/api/players')
+            .then(r => r.json())
+            .then(data => {
+              PLAYERS = data;
+              renderCalendar();
+              selectDate(selectedDate);
+            })
+            .catch(err => console.error('선수 로드 실패:', err));
+        }
         let currentDate = new Date();
         let selectedDate = null;
         let selectedEvent = null;
@@ -670,8 +681,7 @@
 
         // 초기화
         selectedDate = new Date().toISOString().split('T')[0];
-        renderCalendar();
-        selectDate(selectedDate);
+        loadPlayers();
         </script>
       </body>
 </html>

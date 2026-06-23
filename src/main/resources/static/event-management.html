@@ -268,8 +268,35 @@ header {
 </div>
 
 <script th:inline="none">
-const PLAYERS = ['장민규', '이재우', '노수빈', '손효성', '김도현', '박정길'];
+let PLAYERS = [];
 let events = [];
+
+function loadPlayers() {
+  fetch('/api/players')
+    .then(r => r.json())
+    .then(data => {
+      PLAYERS = data;
+      createPlayerDatalist();
+      loadEvents();
+    })
+    .catch(err => {
+      console.error('선수 로드 실패:', err);
+      loadEvents();
+    });
+}
+
+function createPlayerDatalist() {
+  let datalist = document.getElementById('playerList');
+  if (!datalist) {
+    datalist = document.createElement('datalist');
+    datalist.id = 'playerList';
+    document.body.appendChild(datalist);
+  }
+  
+  datalist.innerHTML = PLAYERS
+    .map(player => `<option value="${player}"></option>`)
+    .join('');
+}
 
 function loadEvents() {
   fetch('/api/all-events')
@@ -409,16 +436,7 @@ function showAlert(element, message, type) {
 
 // 초기화
 document.getElementById('eventDate').valueAsDate = new Date();
-loadEvents();
+loadPlayers();
 </script>
-
-<datalist id="playerList">
-  <option value="장민규"></option>
-  <option value="이재우"></option>
-  <option value="노수빈"></option>
-  <option value="손효성"></option>
-  <option value="김도현"></option>
-  <option value="박정길"></option>
-</datalist>
 </body>
 </html>
